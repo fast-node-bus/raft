@@ -35,5 +35,19 @@ require('./services/listener')(host, port, function (socket) {
     var raftNode = new RaftNode(clusterConfig, raftMessage);
     var coordinator = new Coordinator(clusterConfig, coordinatorMessage);
 
-    clusterService(clusterConfig, raftNode, coordinator);
+    initialize(clusterConfig, raftNode, coordinator);
 });
+
+function initialize(clusterConfig, raftNode, coordinator){
+    raftNode.commit(function(msg){
+        clusterConfig.add(msg.nodeInfo);
+    });
+
+    coordinator.addNode(function(nodeInfo, res){
+       if(clusterConfig.isLeader){
+           raftNode.addNode(nodeInfo, function(err, res){
+
+           });
+       }
+    });
+}
