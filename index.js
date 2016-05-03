@@ -4,7 +4,7 @@ var Message = require('./lib/message2');
 
 var ClusterConfig = require('./service/cluster-config');
 var NodeService = require('./service/node-service');
-var Client=require('./service/client');
+var Client = require('./service/client');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -20,13 +20,22 @@ var nodeAddress = {
 var clusterConfig = new ClusterConfig(nodeAddress);
 var nodeService = new NodeService(clusterConfig);
 
-nodeService.listen(host, port, function(err){
+var raftService=new RaftService(clusterConfig);
+raftService.start(function(err){
     if(err){
         throw err;
     }
 
+
+});
+
+nodeService.listen(host, port, function (err) {
+    if (err) {
+        throw err;
+    }
+
     if (seedPort) {
-        nodeService.addNode(seedHost, seedPort, nodeAddress, function (err) {
+        nodeService.addNode([{host: seedHost, port: seedPort}], function (err) {
             if (err) {
                 throw err;
             }

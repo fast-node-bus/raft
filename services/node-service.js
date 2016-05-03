@@ -1,5 +1,7 @@
 var net = require('net');
-var Message = require('../lib/message2');
+
+var Server = require('./server')
+var Client = require('./client');
 
 var SEED_DELAY = 1000;
 var FIND_LEADER_ATTEMPT = 3;
@@ -9,27 +11,42 @@ function NodeService(clusterConfig) {
 }
 
 
-NodeService.prototype.listen = function (host, port, callback) {
+NodeService.prototype.start = function (callback) {
+    var raftService=new RaftService(this._clusterConfig);
+    raftService.start(function(err){
+        if(err){
+            return callback(err);
+        }
+
+
+    });
+};
+
+NodeService.prototype.listen = function (callback) {
+    var nodeAddress=this._clusterConfig.nodeAddress;
+
     var server = net.createServer(function (socket) {
         var self = this;
         var message = new Message(socket);
 
         message.listen('add-node', function (nodeAddress, res) {
             if (self._clusterConfig.isLeader) {
-                var nodeInfo = createNodeInfo.call(self, nodeAddress);
+                var nodeInfo = self._clusterConfig.createNodeInfo(nodeAddress);
                 self._raft.set(nodeInfo, function (err) {
                     if (err) {
                         return res.send(err);
                     }
 
-                    addConnect.call(self, nodeAddress,function(err){
-                        res.send(null);
-                    });
+                    res.send(null);
                 });
             } else {
                 var leaderAddress = self._clusterConfig.getLeaderAddress();
                 res.send(null, leaderAddress);
             }
+        });
+
+        message.listen('append-entries', function(type, msg, res){
+
         });
     });
 
@@ -37,14 +54,15 @@ NodeService.prototype.listen = function (host, port, callback) {
         callback(err);
     });
 
-    server.listen(port, host, function () {
+    server.listen(nodeAddress.port, nodeAddress.host, function () {
         callback(null);
     });
 };
 
-NodeService.prototype.addNode = function (seeds, nodeAddress, callback) {
+NodeService.prototype.addNode = function (seeds, callback) {
     var seedCounter = 0;
     var attempt = FIND_LEADER_ATTEMPT;
+    var nodeAddress = this._clusterConfig.nodeAddress;
 
     function addNode(host, port) {
         var client = new Client(host, port);
