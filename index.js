@@ -2,9 +2,9 @@ var moment = require('moment');
 var debug = require('./helper/debug');
 var Message = require('./lib/message2');
 
-var ClusterConfig = require('./service/cluster-config');
 var NodeService = require('./service/node-service');
-var Client = require('./service/client');
+var RaftService = require('./services/raft-service');
+var Coordinator = require('./services/coordinator');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -17,19 +17,12 @@ var nodeAddress = {
     port: port
 };
 
-var clusterConfig = new ClusterConfig(nodeAddress);
-var nodeService = new NodeService(clusterConfig);
+var nodeService = new NodeService(nodeAddress);
 
-var raftService=new RaftService(clusterConfig);
-raftService.start(function(err){
-    if(err){
-        throw err;
-    }
+var raftService = new RaftService(nodeAddress);
+var coordinator = new Coordinator(raftService);
 
-
-});
-
-nodeService.listen(host, port, function (err) {
+coordinator.start(host, port, function (err) {
     if (err) {
         throw err;
     }
@@ -41,13 +34,6 @@ nodeService.listen(host, port, function (err) {
             }
         });
     } else {
-        var nodeInfo = {
-            id: 1,
-            host: host,
-            port: port,
-            leader: true
-        };
-
-        clusterConfig.set(nodeInfo);
+        raftService.setAsLeader(nodeAddress);
     }
 });
