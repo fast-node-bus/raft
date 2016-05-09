@@ -2,9 +2,10 @@ var moment = require('moment');
 var debug = require('./helper/debug');
 var Message = require('./lib/message2');
 
-var NodeService = require('./service/node-service');
+var NodeService = require('./services/node-service');
 var RaftService = require('./services/raft-service');
 var Coordinator = require('./services/coordinator');
+var nodeCmdHandlers = require('./services/node-handlers');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -19,7 +20,7 @@ var nodeAddress = {
 
 var nodeService = new NodeService(nodeAddress);
 
-var raftService = new RaftService(nodeAddress);
+var raftService = new RaftService(nodeAddress, nodeCmdHandlers);
 var coordinator = new Coordinator(raftService);
 
 coordinator.start(host, port, function (err) {

@@ -1,15 +1,16 @@
 var RaftConfig = require('./raft-config');
 var Raft = require('./raft');
 
-function RaftService(nodeAddress) {
+function RaftService(nodeAddress, cmdHandlers) {
     var self = this;
     this.isLeader = false;
 
     this._raftConfig = new RaftConfig(nodeAddress);
     this._raft = new Raft(this._raftConfig);
 
-    this._raft.on('append-entries', function (cmd) {
-        cmdHandler.call(self, cmd);
+    this._raft.onCommit(function (err, cmd) {
+        var func = cmdHandlers[cmd.name];
+        func.call(self, cmd);
     });
 }
 
@@ -36,14 +37,8 @@ RaftService.prototype.addNode = function (nodeAddress, callback) {
     });
 };
 
-var handlers = {};
 handlers[Raft.ADD_NODE] = function (data) {
 
 };
-
-function cmdHandler(cmd) {
-    var func = handlers[cmd.name];
-    func(cmd);
-}
 
 module.exports = RaftService;
