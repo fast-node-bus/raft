@@ -23,6 +23,16 @@ Coordinator.prototype.start = function (host, port, callback) {
                 res.send(null, leaderAddress);
             }
         });
+
+        message.listen('append-entries', function(msg, res){
+           self._raftService.appendEntries(msg, function(err){
+               if(err){
+                   return res.send(err);
+               }
+
+               res.send(null);
+           });
+        });
     });
 
     server.on('error', function (err) {

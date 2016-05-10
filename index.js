@@ -2,10 +2,9 @@ var moment = require('moment');
 var debug = require('./helper/debug');
 var Message = require('./lib/message2');
 
-var NodeService = require('./services/node-service');
+var ClientService = require('./services/client-service');
 var RaftService = require('./services/raft-service');
 var Coordinator = require('./services/coordinator');
-var nodeCmdHandlers = require('./services/node-handlers');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -18,9 +17,9 @@ var nodeAddress = {
     port: port
 };
 
-var nodeService = new NodeService(nodeAddress);
+var clientService = new ClientService(nodeAddress);
 
-var raftService = new RaftService(nodeAddress, nodeCmdHandlers);
+var raftService = new RaftService(nodeAddress);
 var coordinator = new Coordinator(raftService);
 
 coordinator.start(host, port, function (err) {
@@ -29,7 +28,7 @@ coordinator.start(host, port, function (err) {
     }
 
     if (seedPort) {
-        nodeService.addNode([{host: seedHost, port: seedPort}], function (err) {
+        clientService.addNode([{host: seedHost, port: seedPort}], function (err) {
             if (err) {
                 throw err;
             }
