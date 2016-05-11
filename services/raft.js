@@ -1,44 +1,64 @@
-var net=require('net');
+var net = require('net');
+var async=require('async');
+
+var RaftConfig = require('./raft-config');
 
 var Message = require('../lib/message2');
-var WatchDog=require('../lib/watch-dog');
+var WatchDog = require('../lib/watch-dog');
 
-function Raft(raftConfig) {
-    this._raftConfig = raftConfig;
-    this._onCommit = function () {
-        // nop
-    };
+function Raft(nodeAddress, CmdHandler) {
+    this._raftConfig = new RaftConfig(nodeAddress);
+    this._cmdHandler = new CmdHandler(this._raftConfig);
 
-    this._watchDog=new WatchDog(300);
-    this._watchDog.timeout(function(){
+    this._request=new RaftRequest(this._raftConfig);
+
+    this._watchDog = new WatchDog(300);
+    this._watchDog.timeout(function () {
         election.call(this);
     });
-
-    //var socket=net.createConnection(raftConfig.port, raftConfig.host, function(){
-    //    var message=new Message(socket);
-    //});
-    //
-    //socket.on('error', function(err){
-    //
-    //});
 }
 
-Raft.prototype.set = function (cmd, callback) {
+Raft.prototype.exec = function (cmd, callback) {
+    if (this._raftConfig.isLeader) {
+        this._request(cmd, function (err) {
+            if (err) {
+                return callback(err);
+            }
+
+            this._cmdHandler.exec(cmd, function (err, result) {
+                callback(err, result);
+            });
+        });
+    } else {
+        callback(null, this._raftConfig.getLeaderAddress());
+    }
+};
+
+Raft.prototype.vote = function (msg, callback) {
 
 };
 
-Raft.prototype.heartBeat=function(){
-    this._watchDog.reset();
+Raft.prototype.appendEntries = function (msg, callback) {
+    // TODO: operate msg
+
+    this._cmdHandler.exec(msg.cmd, function (err, result) {
+        callback(err, result);
+    });
 };
 
-Raft.prototype.onCommit = function (callback) {
-    this._onCommit = callback;
-};
-
-function election(){
+function election() {
+    var voteCount=1;
     var nodes = this._raftConfig.getNodes();
-    nodes.forEach(function(nodeInfo){
+    var connectionManager=new ConnectionManager(nodes);
+    var msg={
+        term: 2,
+        candidateId: 123,
+        lastLogIndex: 33,
+        lastLogTerm: 1
+    };
 
+    connectionManager.send('request-vote', msg, function(err, result){
+        voteCount++;
     });
 }
 

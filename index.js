@@ -1,10 +1,10 @@
 var moment = require('moment');
 var debug = require('./helper/debug');
-var Message = require('./lib/message2');
 
 var ClientService = require('./services/client-service');
+var NodeCmdHandler = require('./services/node-cmd-handler');
 var RaftService = require('./services/raft-service');
-var Coordinator = require('./services/coordinator');
+var Raft = require('./services/raft');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -17,12 +17,14 @@ var nodeAddress = {
     port: port
 };
 
+var cmdHandler = new NodeCmdHandler();
+
+var raft = new Raft(nodeAddress, cmdHandler);
+var raftService = new RaftService(nodeAddress, raft);
+
 var clientService = new ClientService(nodeAddress);
 
-var raftService = new RaftService(nodeAddress);
-var coordinator = new Coordinator(raftService);
-
-coordinator.start(host, port, function (err) {
+raftService.start(host, port, function (err) {
     if (err) {
         throw err;
     }
@@ -33,7 +35,5 @@ coordinator.start(host, port, function (err) {
                 throw err;
             }
         });
-    } else {
-        raftService.setAsLeader(nodeAddress);
     }
 });

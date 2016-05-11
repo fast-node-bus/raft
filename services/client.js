@@ -15,7 +15,12 @@ Client.prototype.addNode = function (nodeAddress, callback) {
 
     var socket = net.createConnection(this._port, this._host, function () {
         var message = new Message(socket);
-        message.send('add-node', nodeAddress, function (err, leaderAddress) {
+        var cmd = {
+            name: 'add-node',
+            value: nodeAddress
+        };
+
+        message.send('client-cmd', cmd, function (err, leaderAddress) {
             if (err) {
                 return deferred.reject(err);
             }
@@ -46,7 +51,7 @@ Client.prototype.addNode = function (nodeAddress, callback) {
         callback(reslut);
     }).catch(function (err) {
         callback(err);
-    }).finally(function(){
+    }).finally(function () {
         socket.end();
     });
 };

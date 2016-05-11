@@ -1,51 +1,40 @@
-var RaftConfig = require('./raft-config');
-var Raft = require('./raft');
-var RaftHandler = require('./raft-handler');
-var CommitHandler = require('./commit-handler');
+var Message = require('../lib/message2');
 
-function RaftService(nodeAddress) {
-    this.isLeader = false;
-
-    this._raftConfig = new RaftConfig(nodeAddress);
-    this._raft = new Raft(this._raftConfig);
-
-    this._raftHandler=new RaftHandler(this._raftConfig);
-    var handler = new CommitHandler(this._raftConfig);
-    this._raft.onCommit(function (cmd) {
-        handler.exec(cmd);
-    });
+function RaftService(nodeAddress, raft) {
+    this._nodeAddress = nodeAddress;
+    this._raft = raft;
 }
 
-//RaftService.prototype.setAsLeader = function (nodeAddress) {
-//    this._raftConfig.setLeader(nodeAddress);
-//    this.isLeader = true;
-//};
+RaftService.prototype.start = function (host, port, callback) {
+    var server = net.createServer(function (socket) {
+        var self = this;
+        var message = new Message(socket);
 
-RaftService.prototype.getLeaderAddress = function () {
-    return this._raftConfig.getLeaderAddress();
-};
+        message.listen('client-cmd', function (cmd, res) {
+            self._raft.exec(cmd, function (err, result) {
+                res.send(err, result);
+            });
+        });
 
-RaftService.prototype.addNode = function (nodeAddress, callback) {
-    var self = this;
-    var nodeInfo = self._raftConfig.createNodeInfo(nodeAddress);
-    self._raft.set(nodeInfo, function (err) {
-        if (err) {
-            return callback(err);
-        }
+        message.listen('append-entries', function (msg, res) {
+            self._raft.appendEntries(msg, function (err, result) {
+                res.send(err, result);
+            });
+        });
 
-        //self._raftConfig.add(nodeInfo);
+        message.listen('request-vote', function (msg, res) {
+            var result = self._raft.vote(msg);
+            res.send(null, result);
+        });
+    });
 
+    server.on('error', function (err) {
+        callback(err);
+    });
+
+    server.listen(this._nodeAddress.port, this._nodeAddress.host, function () {
         callback(null);
     });
-};
-
-RaftService.prototype.appendEntries=function(msg, callback){
-    //var handler = this._raft.getHandler(msg);
-
-    //var handler = this._raftHandler.get(msg);
-    //this._raft(msg, handler);
-
-    //this._raft.
 };
 
 module.exports = RaftService;

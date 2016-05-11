@@ -2,6 +2,7 @@
   "name": "application-name",
   "version": "0.0.1",
   "dependencies": {
+    "async": "^2.0.0-rc.4",
     "debug": "^2.2.0",
     "moment": "^2.13.0",
     "q": "^1.4.1",
