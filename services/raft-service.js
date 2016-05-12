@@ -5,7 +5,7 @@ function RaftService(nodeAddress, raft) {
     this._raft = raft;
 }
 
-RaftService.prototype.start = function (host, port, callback) {
+RaftService.prototype.start = function (callback) {
     var server = net.createServer(function (socket) {
         var self = this;
         var message = new Message(socket);

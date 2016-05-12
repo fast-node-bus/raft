@@ -1,5 +1,5 @@
 var net = require('net');
-var async=require('async');
+var async = require('async');
 
 var RaftConfig = require('./raft-config');
 
@@ -7,15 +7,24 @@ var Message = require('../lib/message2');
 var WatchDog = require('../lib/watch-dog');
 
 function Raft(nodeAddress, CmdHandler) {
+    var self=this;
     this._raftConfig = new RaftConfig(nodeAddress);
     this._cmdHandler = new CmdHandler(this._raftConfig);
 
-    this._request=new RaftRequest(this._raftConfig);
+    //***
+    this._candidateService = new CandidateService(this._raftConfig);
+    this._leaderService = new LeaderService(this._raftConfig, CmdHandler);
+    this._followerService=new FollowerService(nodeAddress);
+
 
     this._watchDog = new WatchDog(300);
     this._watchDog.timeout(function () {
-        election.call(this);
+        self._candidateService.election(function(){
+            self._leaderService.start();
+        });
     });
+
+    this._followerService.start();
 }
 
 Raft.prototype.exec = function (cmd, callback) {
@@ -47,19 +56,21 @@ Raft.prototype.appendEntries = function (msg, callback) {
 };
 
 function election() {
-    var voteCount=1;
-    var nodes = this._raftConfig.getNodes();
-    var connectionManager=new ConnectionManager(nodes);
-    var msg={
+    var self = this;
+    var voteCount = 1;
+    var msg = {
         term: 2,
         candidateId: 123,
         lastLogIndex: 33,
         lastLogTerm: 1
     };
 
-    connectionManager.send('request-vote', msg, function(err, result){
-        voteCount++;
-    });
+    self._candidateService.election(
+        function () {
+            self._leaderService.start();
+        }, function () {
+
+        });
 }
 
 module.exports = Raft;

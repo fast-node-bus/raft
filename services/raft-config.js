@@ -6,9 +6,17 @@ function RaftConfig(nodeAddress) {
     this._nodeAddress = nodeAddress;
     this._nodesById = new IndexArray('id');
     this._leader = {};
+
+    this.isLeader = false;
 }
 
 RaftConfig.prototype.setLeader = function (nodeAddress) {
+    // TODO: reset old Leader
+    if (!nodeAddress) {
+        this.isLeader = true;
+        nodeAddress = this._nodeAddress;
+    }
+
     var id = generateId(nodeAddress);
     var nodeInfo = this._nodesById.getIndex(id);
     nodeInfo.isLeader = true;
