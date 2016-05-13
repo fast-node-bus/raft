@@ -1,18 +1,16 @@
 var net = require('net');
-var RaftConfig = require('./raft-config');
 var FollowerService = require('./raft/follower-service');
 var CandidateService = require('./raft/candidate-service');
 var LeaderService = require('./raft/leader-service');
 
 var Message = require('../lib/message2');
 
-module.exports = function (nodeAddress, CmdHandler, callback) {
-    var raftConfig = new RaftConfig(nodeAddress);
-    var connectionManager = new ConnectionManager();
+var RESPONSE_TIMEOUT = 100;
 
-    var followerService = new FollowerService(raftConfig, CmdHandler);
-    var candidateService = new CandidateService(raftConfig, connectionManager);
-    var leaderService = new LeaderService(raftConfig, connectionManager, CmdHandler);
+module.exports = function (raftConfig, cmdHandler, callback) {
+    var followerService = new FollowerService(raftConfig, cmdHandler);
+    var candidateService = new CandidateService(raftConfig, RESPONSE_TIMEOUT);
+    var leaderService = new LeaderService(raftConfig, cmdHandler, RESPONSE_TIMEOUT);
 
     var electionTimer = new ElectionTimer(300);
 
@@ -63,7 +61,7 @@ module.exports = function (nodeAddress, CmdHandler, callback) {
         callback(err);
     });
 
-    server.listen(this._nodeAddress.port, this._nodeAddress.host, function () {
+    server.listen(raftConfig.nodeAddress.port, raftConfig.nodeAddress.host, function () {
         callback(null);
     });
 

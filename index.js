@@ -3,7 +3,8 @@ var debug = require('./helper/debug');
 
 var ClientService = require('./services/client-service');
 var NodeCmdHandler = require('./services/node-cmd-handler');
-var initializer=require('./services/initializer');
+var RaftConfig = require('./services/raft-config');
+var initializer = require('./services/initializer');
 
 var host = 'localhost';
 var port = process.argv[2];
@@ -16,9 +17,11 @@ var nodeAddress = {
     port: port
 };
 
+var raftConfig = new RaftConfig(nodeAddress);
+var cmdHandler = new NodeCmdHandler(raftConfig);
 var clientService = new ClientService(nodeAddress);
 
-initializer(nodeAddress, NodeCmdHandler, function (err) {
+initializer(raftConfig, cmdHandler, function (err) {
     if (err) {
         throw err;
     }
