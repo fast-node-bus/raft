@@ -2,17 +2,21 @@ var Q = require('q');
 
 var RaftRequest = require('./raft-request');
 
+var HEART_BEAT_DELAY = 100;
+
 function LeaderService(raftConfig, cmdHandler, timeout) {
     this._raftConfig = raftConfig;
     this._cmdHandler = cmdHandler;
     this._timeout = timeout;
 
     this._timer = new Timer(200);
+    this._requestService = new RequestService(timeout);
 }
 
 LeaderService.prototype.exec = function (cmd, callback) {
     var self = this;
-    self._request(cmd, function (err) {
+    var msg = creareCmdMsg(cmd);
+    self._requestService.sendAll(msg, function (err) {
         if (err) {
             return callback(err);
         }
@@ -26,54 +30,39 @@ LeaderService.prototype.exec = function (cmd, callback) {
 LeaderService.prototype.start = function () {
     var self = this;
 
-
-    var deferred = Q.defer();
-
     var leaderId = self._raftConfig.getNodeId();
-    var term = 5;
-    var prevLogTerm = 2;
-    var prevLogIndex = 45;
-    var commitIndex = 44;
+    var nodes = self._raftConfig.getNodes();
 
-    self._timer.start(function () {
-        var msg = createMsg(leaderId, term, prevLogTerm, prevLogIndex, commitIndex, []);
-        var nodes = self._raftConfig.getNodes();
-        //var majority = (nodes.length / 2 + 1) | 0;
-
-        var requests = [];
-        var promiseCount = 1;
-        nodes.forEach(function (nodeInfo) {
-            var request = new RaftRequest(nodeInfo, self._timeout);
-            request.send('append-entries', msg, function (err, voteGranted) {
-                if (err) {
-                    deferred.reject(err);
-                }
-
-                if (voteGranted) {
-                    promiseCount++;
-                }
-
-                if (promiseCount >= majority) {
-                    requests.forEach(function (req) {
-                        req.close();
-                    });
-                    deferred.resolve(voteCount);
-                }
-
-                request.close();
-            });
-
-            requests.push(request);
-        });
-
-        deferred.promise
-            .then(function () {
-                callback(null);
-            }).catch(function (err) {
-                callback(err);
-            });
+    nodes.forEach(function (nodeInfo) {
+        self._requestService.add(nodeInfo);
     });
 
+    self._requestService.onAppendEntries(function (result) {
+        // TODO: handle append-entries response
+        if(result.success){
+            if(result.term<34){
+
+            }
+        }else{
+            var term = 5;
+            var prevLogTerm = 2;
+            var prevLogIndex = 45;
+            var commitIndex = 44;
+            var msg = createMsg(leaderId, term, prevLogTerm, prevLogIndex, commitIndex, ['cmd1', 'cmd2']);
+            self._requestService.send(result.from, msg);
+        }
+    });
+
+    self._requestService.onHeartBeat(function () {
+        // TODO: handle request timer elapsed
+        var term = 5;
+        var prevLogTerm = 2;
+        var prevLogIndex = 45;
+        var commitIndex = 44;
+        var msg = createMsg(leaderId, term, prevLogTerm, prevLogIndex, commitIndex, []);
+
+        return msg;
+    });
 };
 
 LeaderService.prototype.stop = function () {
