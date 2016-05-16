@@ -9,21 +9,28 @@ function LeaderService(raftConfig, cmdHandler, timeout) {
     this._cmdHandler = cmdHandler;
     this._timeout = timeout;
 
-    this._timer = new Timer(200);
     this._requestService = new RequestService(timeout);
 }
 
 LeaderService.prototype.exec = function (cmd, callback) {
     var self = this;
-    var msg = creareCmdMsg(cmd);
-    self._requestService.sendAll(msg, function (err) {
+    var msg = createCmdMsg(cmd);
+    var majority = self._raftConfig.getMajority();
+    var count = 1;
+    self._requestService.sendAll(msg, function (err, result) {
         if (err) {
             return callback(err);
         }
 
-        self._cmdHandler.exec(cmd, function (err, result) {
-            callback(err, result);
-        });
+        if (result.success) {
+            count++;
+        }
+
+        if (count == majority) {
+            self._cmdHandler.exec(cmd, function (err, result) {
+                callback(err, result);
+            });
+        }
     });
 };
 
@@ -39,11 +46,11 @@ LeaderService.prototype.start = function () {
 
     self._requestService.onAppendEntries(function (result) {
         // TODO: handle append-entries response
-        if(result.success){
-            if(result.term<34){
+        if (result.success) {
+            if (result.term < 34) {
 
             }
-        }else{
+        } else {
             var term = 5;
             var prevLogTerm = 2;
             var prevLogIndex = 45;

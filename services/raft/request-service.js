@@ -59,7 +59,12 @@ RequestService.prototype.sendAll = function (msg, callback) {
     connections.forEach(function (connection) {
         connection.timer.reset();
         connection.request.send('append-entries', msg, function (err, result) {
+            if(err){
+                return callback(err);
+            }
+
             self._appendEntriesMsg(result);
+            callback(null, result);
         });
     });
 };
