@@ -37,7 +37,37 @@ LeaderService.prototype.start = function () {
         self._requestService.add(nodeInfo);
     });
 
+    var handler={
+        reject: function(result){
+            self._requestService.send(msg.from, result, function(err){
+                callback(err);
+            });
+        },
+        accept: function(result){
+            self._requestService.send(msg.from, result, function(err){
+                callback(err);
+            });
+        },
+        commit: function(result){
+
+        }
+    };
+
     self._requestService.onAppendEntries(function (msg, callback) {
+
+
+        var result=self._leaderHelper.appendEntries(msg);
+        switch (result.state){
+            case 'reject':
+            case 'accept':
+                self._requestService.send(msg.from, result, function(err){
+                    callback(err);
+                });
+                break;
+            case 'commit':
+
+        }
+
         self._leaderHelper.appendEntries(msg, function(err, result){
             if(err){
                 return callback(err);
@@ -50,6 +80,11 @@ LeaderService.prototype.start = function () {
     });
 
     self._requestService.onHeartBeat(function (id, callback) {
+        var result=self._leaderHelper.heartBeat();
+        self._requestService.send(id, result, function(err){
+            callback(err);
+        });
+
         self._leaderHelper.heartBeat(function(err, result){
             if(err){
                 return callback(err);
