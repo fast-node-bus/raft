@@ -8,6 +8,8 @@ var Message = require('../lib/message2');
 var RESPONSE_TIMEOUT = 100;
 
 module.exports = function (raftConfig, cmdHandler, callback) {
+    //var commitLog=new CommitLog();
+
     var followerService = new FollowerService(raftConfig, cmdHandler);
     var candidateService = new CandidateService(raftConfig, RESPONSE_TIMEOUT);
     var leaderService = new LeaderService(raftConfig, cmdHandler, RESPONSE_TIMEOUT);

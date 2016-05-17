@@ -15,7 +15,8 @@ NodeCmdHandler.prototype.exec = function (cmd, callback) {
 
 var handlers = {
     'add-node': function (cmd) {
-        this._raftConfig.add(cmd.value);
+        var nodeInfo = this._raftConfig.createNodeInfo(cmd.value);
+        this._raftConfig.add(nodeInfo);
     }
 };
 

@@ -45,6 +45,18 @@ RaftConfig.prototype.add = function (nodeInfo) {
     this._nodesById.addIndex(nodeInfo);
 };
 
+RaftConfig.prototype.getNodeId = function () {
+    // TODO: return leader ID
+};
+
+RaftConfig.prototype.getNodes = function () {
+    // TODO: return all nodes
+};
+
+RaftConfig.prototype.getMajority = function () {
+    // TODO: return amount majority nodes
+};
+
 function generateId(nodeAddress) {
     return nodeAddress.host + ':' + nodeAddress.port;
 }
