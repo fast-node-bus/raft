@@ -2,8 +2,9 @@ var Q = require('q');
 
 var RaftRequest = require('./raft-request');
 
-function CandidateService(raftConfig, timeout) {
-    this._raftConfig = raftConfig;
+function CandidateService(clusterConfig, raftState, timeout) {
+    this._clusterConfig = clusterConfig;
+    this._raftState = raftState;
     this._timeout = timeout;
 }
 
@@ -11,14 +12,9 @@ CandidateService.prototype.election = function (callback) {
     var self = this;
     var deferred = Q.defer();
 
-    var nodeId = self._raftConfig.getNodeId();
-    var term = 5;
-    var lastLogTerm = 2;
-    var lastLogIndex = 45;
-
-    var msg = createMsg(nodeId, term, lastLogTerm, lastLogIndex);
-    var nodes = self._raftConfig.getNodes();
-    var majority = (nodes.length / 2 + 1) | 0;
+    var msg = self._raftState.createVoteMsg();
+    var nodes = self._clusterConfig.getNodes();
+    var majority = self._clusterConfig.getMajority();
     var voteCount = 1;
 
     if (majority == 1) {
@@ -57,14 +53,5 @@ CandidateService.prototype.election = function (callback) {
             callback(err);
         });
 };
-
-function createMsg(nodeId, term, lastLogTerm, lastLogIndex) {
-    return {
-        candidateId: nodeId,
-        term: term,
-        lastLogTerm: lastLogTerm,
-        lastLogIndex: lastLogIndex
-    };
-}
 
 module.exports = CandidateService;

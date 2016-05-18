@@ -7,19 +7,21 @@ var Message = require('../lib/message2');
 
 var RESPONSE_TIMEOUT = 100;
 
-module.exports = function (raftConfig, cmdHandler, callback) {
-    //var commitLog=new CommitLog();
+// TODO: set leader 1. for self; 2. for other followers;
+module.exports = function (clusterConfig, cmdHandler, callback) {
+    var raftState = new RaftState();
+    var commitLog = new CommitLog();
 
-    var followerService = new FollowerService(raftConfig, cmdHandler);
-    var candidateService = new CandidateService(raftConfig, RESPONSE_TIMEOUT);
-    var leaderService = new LeaderService(raftConfig, cmdHandler, RESPONSE_TIMEOUT);
+    var followerService = new FollowerService(clusterConfig, raftState, commitLog, cmdHandler);
+    var candidateService = new CandidateService(clusterConfig, raftState, RESPONSE_TIMEOUT);
+    var leaderService = new LeaderService(clusterConfig, raftState, commitLog, cmdHandler, RESPONSE_TIMEOUT);
 
     var electionTimer = new ElectionTimer(300);
 
     electionTimer.timeout(function () {
         candidateService.election(function () {
             electionTimer.stop();
-            raftConfig.setLeader();
+            raftState.setLeader();
             leaderService.start();
         });
     });
@@ -28,12 +30,12 @@ module.exports = function (raftConfig, cmdHandler, callback) {
         var message = new Message(socket);
 
         message.listen('client-cmd', function (cmd, res) {
-            if (raftConfig.isLeader) {
+            if (raftState.isLeader) {
                 leaderService.exec(cmd, function (err, result) {
                     res.send(err, result);
                 });
             } else {
-                res.send(null, raftConfig.getLeaderAddress());
+                res.send(null, clusterConfig.getLeaderAddress());
             }
         });
 
@@ -63,7 +65,7 @@ module.exports = function (raftConfig, cmdHandler, callback) {
         callback(err);
     });
 
-    server.listen(raftConfig.nodeAddress.port, raftConfig.nodeAddress.host, function () {
+    server.listen(clusterConfig.nodeAddress.port, clusterConfig.nodeAddress.host, function () {
         callback(null);
     });
 

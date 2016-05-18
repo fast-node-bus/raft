@@ -1,5 +1,5 @@
-function NodeCmdHandler(raftConfig) {
-    this._raftConfig = raftConfig;
+function NodeCmdHandler(clusterConfig) {
+    this._clusterConfig = clusterConfig;
 }
 
 NodeCmdHandler.prototype.exec = function (cmd, callback) {
@@ -15,8 +15,8 @@ NodeCmdHandler.prototype.exec = function (cmd, callback) {
 
 var handlers = {
     'add-node': function (cmd) {
-        var nodeInfo = this._raftConfig.createNodeInfo(cmd.value);
-        this._raftConfig.add(nodeInfo);
+        var nodeInfo = this._clusterConfig.createNodeInfo(cmd.value);
+        this._clusterConfig.add(nodeInfo);
     }
 };
 

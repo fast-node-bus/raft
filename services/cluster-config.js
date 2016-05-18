@@ -2,7 +2,7 @@ var moment = require('moment');
 
 var IndexArray = require('../lib/index-array');
 
-function RaftConfig(nodeAddress) {
+function ClusterConfig(nodeAddress) {
     this._nodesById = new IndexArray('id');
     this._leader = {};
 
@@ -10,7 +10,7 @@ function RaftConfig(nodeAddress) {
     this.isLeader = false;
 }
 
-RaftConfig.prototype.setLeader = function (nodeAddress) {
+ClusterConfig.prototype.setLeader = function (nodeAddress) {
     // TODO: reset old Leader
     if (!nodeAddress) {
         this.isLeader = true;
@@ -24,14 +24,14 @@ RaftConfig.prototype.setLeader = function (nodeAddress) {
     this._leader = nodeInfo;
 };
 
-RaftConfig.prototype.getLeaderAddress = function () {
+ClusterConfig.prototype.getLeaderAddress = function () {
     return {
         host: this._leader.host,
         port: this._leader.port
     };
 };
 
-RaftConfig.prototype.createNodeInfo = function (nodeAddress) {
+ClusterConfig.prototype.createNodeInfo = function (nodeAddress) {
     return {
         id: generateId(nodeAddress),
         created: moment.now(),
@@ -41,19 +41,19 @@ RaftConfig.prototype.createNodeInfo = function (nodeAddress) {
     };
 };
 
-RaftConfig.prototype.add = function (nodeInfo) {
+ClusterConfig.prototype.add = function (nodeInfo) {
     this._nodesById.addIndex(nodeInfo);
 };
 
-RaftConfig.prototype.getNodeId = function () {
+ClusterConfig.prototype.getNodeId = function () {
     // TODO: return leader ID
 };
 
-RaftConfig.prototype.getNodes = function () {
+ClusterConfig.prototype.getNodes = function () {
     // TODO: return all nodes
 };
 
-RaftConfig.prototype.getMajority = function () {
+ClusterConfig.prototype.getMajority = function () {
     // TODO: return amount majority nodes
 };
 
@@ -61,6 +61,6 @@ function generateId(nodeAddress) {
     return nodeAddress.host + ':' + nodeAddress.port;
 }
 
-module.exports = RaftConfig;
+module.exports = ClusterConfig;
 
 

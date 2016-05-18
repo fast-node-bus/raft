@@ -3,7 +3,7 @@ var debug = require('./helper/debug');
 
 var ClientService = require('./services/client-service');
 var NodeCmdHandler = require('./services/node-cmd-handler');
-var RaftConfig = require('./services/raft-config');
+var ClusterConfig = require('./services/cluster-config');
 var initializer = require('./services/initializer');
 
 var host = 'localhost';
@@ -17,11 +17,11 @@ var nodeAddress = {
     port: port
 };
 
-var raftConfig = new RaftConfig(nodeAddress);
-var cmdHandler = new NodeCmdHandler(raftConfig);
+var clusterConfig = new ClusterConfig(nodeAddress);
+var cmdHandler = new NodeCmdHandler(clusterConfig);
 var clientService = new ClientService(nodeAddress);
 
-initializer(raftConfig, cmdHandler, function (err) {
+initializer(clusterConfig, cmdHandler, function (err) {
     if (err) {
         throw err;
     }

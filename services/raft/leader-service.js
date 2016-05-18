@@ -1,5 +1,5 @@
-function LeaderService(raftConfig, cmdHandler, timeout) {
-    this._raftConfig = raftConfig;
+function LeaderService(clusterConfig, cmdHandler, timeout) {
+    this._clusterConfig = clusterConfig;
     this._cmdHandler = cmdHandler;
     this._timeout = timeout;
 
@@ -10,7 +10,7 @@ function LeaderService(raftConfig, cmdHandler, timeout) {
 LeaderService.prototype.exec = function (cmd, callback) {
     var self = this;
     var msg = self._leaderHelper.cmd(cmd);
-    var majority = self._raftConfig.getMajority();
+    var majority = self._clusterConfig.getMajority();
     var count = 1;
     self._requestService.sendAll(msg, function (err, result) {
         if (err) {
@@ -31,7 +31,7 @@ LeaderService.prototype.exec = function (cmd, callback) {
 
 LeaderService.prototype.start = function () {
     var self = this;
-    var nodes = self._raftConfig.getNodes();
+    var nodes = self._clusterConfig.getNodes();
 
     nodes.forEach(function (nodeInfo) {
         self._requestService.add(nodeInfo);
