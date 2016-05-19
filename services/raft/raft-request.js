@@ -35,6 +35,7 @@ RaftRequest.prototype.send = function (method, msg, callback) {
 
         var timerId = setTimeout(function () {
             self.close();
+            callback(new Error('Request timeout.'));
         }, self._timeout);
 
         return message;
