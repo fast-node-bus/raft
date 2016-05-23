@@ -1,5 +1,5 @@
 var Request = require('./raft-request');
-var IndexArray = require('../../lib/index-array');
+var IndexArray = require('../../../lib/index-array');
 
 var HEART_BEAT_DELAY = 100;
 

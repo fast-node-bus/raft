@@ -1,10 +1,12 @@
 var util = require('util');
 var BaseState = require('./base-state');
 
-function Follower() {
-    BaseState.call(this);
+var ELECTION_TIMEOUT=300;
 
-    this._timer = new ElectionTimer();
+function Follower(raftState, commitLog) {
+    BaseState.call(this, raftState, commitLog);
+
+    this._timer = new ElectionTimer(ELECTION_TIMEOUT);
 }
 
 util.inherits(Follower, BaseState);
@@ -13,7 +15,7 @@ Follower.prototype.start = function () {
     var self = this;
     self._timer.start(function () {
         self._context.switchToCandidate();
-    }, 300);
+    });
 };
 
 Follower.prototype.stop = function () {

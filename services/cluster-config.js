@@ -46,7 +46,7 @@ ClusterConfig.prototype.add = function (nodeInfo) {
 };
 
 ClusterConfig.prototype.getNodeId = function () {
-    // TODO: return leader ID
+    // TODO: return self ID
 };
 
 ClusterConfig.prototype.getNodes = function () {

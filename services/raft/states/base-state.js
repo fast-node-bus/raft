@@ -1,5 +1,6 @@
-function BaseState(raftState) {
+function BaseState(raftState, commitLog) {
     this._raftState = raftState;
+    this._commitLog = commitLog;
     this._context = {};
 }
 
@@ -12,7 +13,7 @@ BaseState.prototype.appendEntries = function (msg, callback) {
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.currentTerm = msg.term;
         self._context.switchToFollower();
-    }else if (msg.term < self._raftState.currentTerm) {
+    } else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
 
@@ -35,14 +36,21 @@ BaseState.prototype.appendEntries = function (msg, callback) {
         self._raftState.commitIndex = Math.min(msg.leaderCommit, self._raftState.lastIndex);
     }
 
-    // Rule for all roles (when AppendEntries)
-    if (self._raftState.commitIndex > self._raftState.lastApplied) {
-        self._raftState.lastApplied++;
-        var entry = self._raftState.get(self._raftState.lastApplied);
-        self._cmdHandler.exec(entry.cmd, function (err) {
-            callback(err);
-        });
+    // !!!Only for candidate!!!
+    if (msg.term === self._raftState.currentTerm) {
+        self._context.switchToFollower();
     }
+
+    callback(null, {success: true, term: self._raftState.currentTerm});
+
+    // Rule for all roles (when AppendEntries)
+    //if (self._raftState.commitIndex > self._raftState.lastApplied) {
+    //    self._raftState.lastApplied++;
+    //    var entry = self._raftState.get(self._raftState.lastApplied);
+    //    self._cmdHandler.exec(entry.cmd, function (err) {
+    //        callback(err);
+    //    });
+    //}
 };
 
 BaseState.prototype.requestVote = function (msg, callback) {
@@ -51,7 +59,7 @@ BaseState.prototype.requestVote = function (msg, callback) {
         self._raftState.currentTerm = msg.term;
         self._raftState.votedFor = msg.candidateId;
         self._context.switchToFollower();
-    }else if (msg.term < self._raftState.currentTerm) {
+    } else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
     }
 

@@ -1,10 +1,12 @@
 var util = require('util');
 var BaseState = require('./base-state');
 
-function Candidate() {
-    BaseState.call(this);
+var ELECTION_TIMEOUT=300;
 
-    this._timer = new ElectionTimer();
+function Candidate(raftState, commitLog) {
+    BaseState.call(this, raftState, commitLog);
+
+    this._timer = new ElectionTimer(ELECTION_TIMEOUT);
 }
 
 util.inherits(Candidate, BaseState);
@@ -15,11 +17,14 @@ Candidate.prototype.start = function () {
     //**********************************
     self._timer.start(function () {
         self._context.switchToCandidate();
-    }, 300);
+    });
     //**********************************
 
     var deferred = Q.defer();
 
+    var nodeId=self._clusterConfig.getNodeId();
+    self._raftState.incTerm();
+    self._raftState.vote(nodeId);
     var msg = self._raftState.createVoteMsg();
     var nodes = self._clusterConfig.getNodes();
     var majority = self._clusterConfig.getMajority();
@@ -59,6 +64,5 @@ Candidate.prototype.stop = function () {
         req.close();
     });
 };
-
 
 module.exports = Candidate;

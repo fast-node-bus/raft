@@ -1,6 +1,6 @@
 var Q = require('q');
 
-var RaftRequest = require('./raft-request');
+var RaftRequest = require('./lib/raft-request');
 
 function CandidateService(clusterConfig, raftState, timeout) {
     this._clusterConfig = clusterConfig;

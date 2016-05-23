@@ -1,7 +1,7 @@
 var net = require('net');
 var Q = require('q');
 
-var Message = require('../../lib/message2');
+var Message = require('../../../lib/message2');
 
 function RaftRequest(nodeInfo, timeout) {
     var self = this;
