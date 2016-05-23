@@ -12,10 +12,7 @@ BaseState.prototype.appendEntries = function (msg, callback) {
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.currentTerm = msg.term;
         self._context.switchToFollower();
-        return callback(null, {success: false, term: self._raftState.currentTerm});
-    }
-
-    if (msg.term < self._raftState.currentTerm) {
+    }else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
 
@@ -54,10 +51,7 @@ BaseState.prototype.requestVote = function (msg, callback) {
         self._raftState.currentTerm = msg.term;
         self._raftState.votedFor = msg.candidateId;
         self._context.switchToFollower();
-        return callback(null, {voteGranted: true, term: self._raftState.currentTerm});
-    }
-
-    if (msg.term < self._raftState.currentTerm) {
+    }else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
     }
 
@@ -68,7 +62,7 @@ BaseState.prototype.requestVote = function (msg, callback) {
         return callback(null, {voteGranted: true, term: self._raftState.currentTerm});
     }
 
-    return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
+    callback(null, {voteGranted: false, term: self._raftState.currentTerm});
 };
 
 module.exports = BaseState;
