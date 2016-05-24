@@ -1,7 +1,13 @@
+var AppendEntries = require('../rpc/append-entries');
+var RequestVote = require('../rpc/request-vote');
+
 function BaseState(raftState, commitLog) {
     this._raftState = raftState;
     this._commitLog = commitLog;
     this._context = {};
+
+    this._appendEntries = new AppendEntries(raftState, commitLog);
+    this._requestVote = new RequestVote(raftState, commitLog);
 }
 
 BaseState.prototype.setContext = function (context) {
@@ -9,68 +15,11 @@ BaseState.prototype.setContext = function (context) {
 };
 
 BaseState.prototype.appendEntries = function (msg, callback) {
-    var self = this;
-    if (msg.term > self._raftState.currentTerm) {
-        self._raftState.currentTerm = msg.term;
-        self._context.switchToFollower();
-    } else if (msg.term < self._raftState.currentTerm) {
-        return callback(null, {success: false, term: self._raftState.currentTerm});
-    }
-
-    var entry = self._raftState.get(msg.prevLogIndex);
-
-    if (!entry || entry.term != msg.prevLogTerm) {
-        return callback(null, {success: false, term: self._raftState.currentTerm});
-    }
-
-    var newEntry = msg.entries[0];
-    if (newEntry) {
-        if (newEntry.term != entry.term) {
-            self._raftState.remove(msg.prevLogIndex);
-        }
-
-        self._raftState.add(newEntry);
-    }
-
-    if (msg.leaderCommit > self._commitIndex) {
-        self._raftState.commitIndex = Math.min(msg.leaderCommit, self._raftState.lastIndex);
-    }
-
-    // !!!Only for candidate!!!
-    if (msg.term === self._raftState.currentTerm) {
-        self._context.switchToFollower();
-    }
-
-    callback(null, {success: true, term: self._raftState.currentTerm});
-
-    // Rule for all roles (when AppendEntries)
-    //if (self._raftState.commitIndex > self._raftState.lastApplied) {
-    //    self._raftState.lastApplied++;
-    //    var entry = self._raftState.get(self._raftState.lastApplied);
-    //    self._cmdHandler.exec(entry.cmd, function (err) {
-    //        callback(err);
-    //    });
-    //}
+    this._appendEntries.requestHandler(msg, callback);
 };
 
 BaseState.prototype.requestVote = function (msg, callback) {
-    var self = this;
-    if (msg.term > self._raftState.currentTerm) {
-        self._raftState.currentTerm = msg.term;
-        self._raftState.votedFor = msg.candidateId;
-        self._context.switchToFollower();
-    } else if (msg.term < self._raftState.currentTerm) {
-        return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
-    }
-
-    var entry = self._raftState.get(self._raftState.lastApplied);
-    var isLogUpToDate = msg.lastLogTerm >= entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
-    if ((!self._raftState.votedFor || self._raftState.votedFor === msg.candidateId) && isLogUpToDate) {
-        self._raftState.votedFor = msg.candidateId;
-        return callback(null, {voteGranted: true, term: self._raftState.currentTerm});
-    }
-
-    callback(null, {voteGranted: false, term: self._raftState.currentTerm});
+    this._requestVote.requestHandler(msg, callback);
 };
 
 module.exports = BaseState;

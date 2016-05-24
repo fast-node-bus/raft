@@ -1,7 +1,4 @@
 var net = require('net');
-var FollowerService = require('./raft/follower-service');
-var CandidateService = require('./raft/candidate-service');
-var LeaderService = require('./raft/leader-service');
 
 var Message = require('../lib/message2');
 
@@ -20,7 +17,7 @@ module.exports = function (clusterConfig, cmdHandler, callback) {
 
         //message.listen('client-cmd', function (cmd, res) {
         //    if (raftState.isLeader) {
-        //        leaderService.exec(cmd, function (err, result) {
+        //        leader.exec(cmd, function (err, result) {
         //            res.send(err, result);
         //        });
         //    } else {

@@ -7,7 +7,7 @@ function Leader(clusterConfig, raftState, commitLog) {
     BaseState.call(this, raftState, commitLog);
 
     this._clusterConfig = clusterConfig;
-    this._requestService = new RequestService(timeout);
+    this._requestService = new RequestService();
 }
 
 util.inherits(Leader, BaseState);
@@ -18,9 +18,9 @@ Leader.prototype.start = function () {
     nodes.forEach(function (nodeInfo) {
         self._requestService.add(
             nodeInfo,
-            function onHeartBeat(id) {
-                var msg = self._appendEntries.createAppendEntry(id);
-                self._requestService.send(id, msg, function (err, result) {
+            function onIdleTimeout(id) {
+                var msg = self._appendEntries.create(id);
+                self._requestService.send('append-entries', id, msg, function (err, result) {
                     if (!err) {
                         self._appendEntries.responseHandler(result);
                     }
@@ -29,8 +29,8 @@ Leader.prototype.start = function () {
     });
 
     self._commitLog.onAddEntry(function (id) {
-        var msg = self._appendEntries.createAppendEntry(id);
-        self._requestService.send(id, msg, function (err, result) {
+        var msg = self._appendEntries.create(id);
+        self._requestService.send('append-entries', id, msg, function (err, result) {
             if (!err) {
                 self._appendEntries.responseHandler(result);
             }
@@ -44,16 +44,6 @@ Leader.prototype.stop = function () {
 
 Leader.prototype.exec = function (cmd, callback) {
     this._commitLog.add(cmd, callback);
-};
-
-Leader.prototype.appendEntries = function (msg, callback) {
-    var self = this;
-    if (msg.term > self._raftState.currentTerm) {
-        self._context.switchToFollower();
-        self._context.appendEntries(msg, callback);
-    } else {
-        callback(null, {success: false, term: self._raftState.currentTerm});
-    }
 };
 
 module.exports = Leader;

@@ -1,11 +1,13 @@
-function AppendEntries() {
-
+function AppendEntries(raftState, commitLog) {
+    this._raftState = raftState;
+    this._commitLog = commitLog;
 }
 
 AppendEntries.prototype.requestHandler = function (msg, callback) {
     var self = this;
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.changeTerm(msg.term); //set self._raftState.votedFor = null;
+        self._raftState.setVotedFor(null);
     } else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
@@ -43,14 +45,6 @@ AppendEntries.prototype.requestHandler = function (msg, callback) {
     //}
 };
 
-AppendEntries.prototype.createAppendEntry = function (id) {
-    var self = this;
-    return {
-        term: self._raftState.getCurrentTerm(),
-        leaderId: 'leaderId'
-    };
-};
-
 AppendEntries.prototype.responseHandler = function (msg) {
     var self = this;
     if (msg.term > self._raftState.currentTerm) {
@@ -58,3 +52,13 @@ AppendEntries.prototype.responseHandler = function (msg) {
         self._manager.switchToFollower();
     }
 };
+
+AppendEntries.prototype.create = function (id) {
+    var self = this;
+    return {
+        term: self._raftState.getCurrentTerm(),
+        leaderId: 'leaderId'
+    };
+};
+
+module.exports = AppendEntries;
