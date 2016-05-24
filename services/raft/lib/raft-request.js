@@ -7,16 +7,23 @@ function RaftRequest(nodeInfo, timeout) {
     var self = this;
     var deferred = Q.defer();
 
-    this._timeout = timeout;
+    self._timeout = timeout;
+    self.available = false;
 
     self._socket = net.createConnection(nodeInfo.port, nodeInfo.host, function () {
         var message = new Message(self._socket);
+        self.available = true;
         deferred.resolve(message);
     });
 
     self._socket.on('error', function (err) {
-
+        self.available = false;
     });
+
+    self._socket.on('close', function () {
+        self.available = false;
+    });
+
 
     this._message = deferred.promise;
 }

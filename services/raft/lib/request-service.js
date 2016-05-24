@@ -2,74 +2,37 @@ var Request = require('./raft-request');
 var IndexArray = require('../../../lib/index-array');
 
 var HEART_BEAT_DELAY = 100;
+var REQUEST_TIMEOUT = 200;
 
-function RequestService(timeout) {
-    this._timeout = timeout;
+function RequestService() {
     this._connections = new IndexArray('id');
-
-    this._appendEntriesMsg = function () {
-        // nop
-    };
-
-    this._heartBeatMsg = function () {
-        // nop
-    };
 }
 
-RequestService.prototype.add = function (nodeInfo) {
+RequestService.prototype.add = function (nodeInfo, onHeartBeat) {
     var self = this;
-    var request = new Request(nodeInfo, self._timeout);
+    var request = new Request(nodeInfo, REQUEST_TIMEOUT);
     var timer = new Timer(HEART_BEAT_DELAY);
     timer.start(function () {
-        self._heartBeatMsg(nodeInfo.id, function(err){
-            // TODO: error handle
-        });
+        onHeartBeat(nodeInfo.id);
     });
 
-    self._connections.addIndex({id: nodeInfo.id, timer: timer, request: request});
+    self._connections.addIndex({id: nodeInfo.id, timer: timer, request: request, nodeInfo: nodeInfo});
 };
 
 RequestService.prototype.send = function (id, msg, callback) {
     var self = this;
     var connection = self._connections.getIndex(id);
     connection.timer.reset();
+    if (!connection.request.available) {
+        connection.request = new Request(connection.nodeInfo, REQUEST_TIMEOUT);
+    }
     connection.request.send('append-entries', msg, function (err, result) {
-        // TODO: reconnect if connection fail
-        self._appendEntriesMsg(result, function(err){
-            callback(err);
-        });
+        callback(err, result);
     });
-};
-
-RequestService.prototype.sendAll = function (msg, callback) {
-    var self = this;
-
-    self._connections.forEach(function (connection) {
-        connection.timer.reset();
-        connection.request.send('append-entries', msg, function (err, result) {
-            if (err) {
-                return callback(err);
-            }
-
-            self._appendEntriesMsg(result, function(err){
-                callback(err);
-            });
-
-            callback(null, result);
-        });
-    });
-};
-
-RequestService.prototype.onAppendEntries = function (callback) {
-    this._appendEntriesMsg = callback;
-};
-
-RequestService.prototype.onHeartBeat = function (callback) {
-    this._heartBeatMsg = callback;
 };
 
 RequestService.prototype.closeAll = function () {
-    this._connections.forEach(function(connection){
+    this._connections.forEach(function (connection) {
         connection.timer.stop();
         connection.request.close();
     });

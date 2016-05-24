@@ -28,14 +28,6 @@ Manager.prototype.switchToLeader = function () {
     this._currentState.start();
 };
 
-Manager.prototype.start = function () {
-    this._currentState.start();
-};
-
-Manager.prototype.stop = function () {
-    this._currentState.stop();
-};
-
 Manager.prototype.appendEntries = function (msg, callback) {
     this._currentState.appendEntries(msg, callback);
 };

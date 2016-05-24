@@ -65,4 +65,14 @@ Candidate.prototype.stop = function () {
     });
 };
 
+Candidate.prototype.appendEntries = function (msg, callback) {
+    var self = this;
+    if (msg.term >= self._raftState.currentTerm) {
+        self._context.switchToFollower();
+        self._context.appendEntries(msg, callback);
+    } else {
+        callback(null, {success: false, term: self._raftState.currentTerm});
+    }
+};
+
 module.exports = Candidate;
