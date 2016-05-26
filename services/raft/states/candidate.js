@@ -22,7 +22,7 @@ Candidate.prototype.start = function () {
     var nodeId = self._clusterConfig.getNodeId();
     self._raftState.incTerm();
     self._raftState.setVotedFor(nodeId);
-    var msg = self._requestVote.create();
+    var msg = self._raftState.createRequestVoteMsg();
     var nodes = self._clusterConfig.getNodes();
     var majority = self._clusterConfig.getMajority();
 

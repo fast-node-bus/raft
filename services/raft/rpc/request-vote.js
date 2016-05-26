@@ -18,7 +18,7 @@ RequestVote.prototype.requestHandler = function (msg, callback) {
     }
 
     var entry = self._raftState.get(self._raftState.lastApplied);
-    var isLogUpToDate = msg.lastLogTerm >= entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
+    var isLogUpToDate = msg.lastLogTerm > entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
     if ((!self._raftState.votedFor || self._raftState.votedFor === msg.candidateId) && isLogUpToDate) {
         self._raftState.votedFor = msg.candidateId;
         return callback(null, {voteGranted: true, term: self._raftState.currentTerm});
@@ -46,10 +46,6 @@ RequestVote.prototype.responseHandler = function (msg, majority, onMajority) {
             onMajority();
         }
     }
-};
-
-RequestVote.prototype.create = function () {
-    return {};
 };
 
 module.exports = RequestVote;

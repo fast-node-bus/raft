@@ -16,12 +16,13 @@ RequestService.prototype.add = function (nodeInfo, onIdlePeriod) {
         onIdlePeriod(nodeInfo.id);
     });
 
-    self._connections.addIndex({id: nodeInfo.id, timer: timer, request: request, nodeInfo: nodeInfo});
+    self._connections.add({id: nodeInfo.id, timer: timer, request: request, nodeInfo: nodeInfo});
 };
 
 RequestService.prototype.send = function (method, id, msg, callback) {
     var self = this;
     var connection = self._connections.getIndex(id);
+    // TODO: resent only if append-entry not heart-beat
     connection.timer.reset();
     if (!connection.request.available) {
         connection.request = new Request(connection.nodeInfo, REQUEST_TIMEOUT);

@@ -14,19 +14,20 @@ AppendEntries.prototype.requestHandler = function (msg, callback) {
 
     self._manager.switchToFollower();
 
-    var entry = self._raftState.get(msg.prevLogIndex);
+    var entry = self._commitLog.get(msg.prevLogIndex);
 
     if (!entry || entry.term != msg.prevLogTerm) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
 
+    // TODO: for all entries
     var newEntry = msg.entries[0];
     if (newEntry) {
         if (newEntry.term != entry.term) {
-            self._raftState.remove(msg.prevLogIndex);
+            self._raftState.removeEntry(msg.prevLogIndex);
         }
 
-        self._raftState.add(newEntry);
+        self._raftState.addEntry(newEntry);
     }
 
     if (msg.leaderCommit > self._commitIndex) {
@@ -49,43 +50,40 @@ AppendEntries.prototype.requestHandler = function (msg, callback) {
     //}
 };
 
-AppendEntries.prototype.responseHandler = function (nodeId, msg) {
+AppendEntries.prototype.responseHandler = function (nodeId, msg, entriesCount) {
     var self = this;
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.changeTerm(msg.term);
         self._manager.switchToFollower();
     } else {
         if (msg.success) {
-            self._commitLog.successful(nodeId); // check lastLogIndex>=nextIndex(nodeId) & nextIndex++; matchIndex++; & onChangeLogIndex
+            //self._commitLog.successful(nodeId, entriesCount); // update nextIndex+=entriesCount; matchIndex+=entriesCount; & check lastLogIndex>=nextIndex(nodeId) & onChangeLogIndex
 
-            var majority = self._commitLog.matchIndex.length / 2 | 0 + 1;
+            self._raftState.updateIndex(nodeId, entriesCount);
+            self._raftState.checkIndex();
+
+            //////////////////////////
+
+            var majority = self._commitLog.majority();
             for (var n = self._commitLog.commitIndex + 1; n <= self._commitLog.lastIndex; n++) {
-                var entry = self._raftState.get(n);
+                var entry = self._commitLog.get(n);
                 if (entry.term === self._raftState._currentTerm) {
                     var count = 1;
-                    for (var i = 0; self._commitLog.matchIndex.length; i++) {
-                        if (self._commitLog.matchIndex[i] >= n) {
+                    for (var id in self._commitLog.matchIndex) {
+                        if (self._commitLog.matchIndex[id] >= n) {
                             count++
                         }
                     }
 
                     if (count >= majority) {
-                        self._raftState.changeCommitIndex(commitIndex);
+                        self._raftState.changeCommitIndex(n);
                     }
                 }
             }
         } else {
-            self._commitLog.fail(nodeId); // check lastLogIndex>=nextIndex(nodeId) & nextIndex--; & onChangeLogIndex
+            self._raftState.decIndex(nodeId);
         }
     }
-};
-
-AppendEntries.prototype.create = function (id) {
-    var self = this;
-    return {
-        term: self._raftState.getCurrentTerm(),
-        leaderId: 'leaderId'
-    };
 };
 
 module.exports = AppendEntries;

@@ -42,7 +42,7 @@ ClusterConfig.prototype.createNodeInfo = function (nodeAddress) {
 };
 
 ClusterConfig.prototype.add = function (nodeInfo) {
-    this._nodesById.addIndex(nodeInfo);
+    this._nodesById.add(nodeInfo);
 };
 
 ClusterConfig.prototype.getNodeId = function () {
@@ -50,7 +50,7 @@ ClusterConfig.prototype.getNodeId = function () {
 };
 
 ClusterConfig.prototype.getNodes = function () {
-    // TODO: return all nodes
+    // TODO: return all neighboring nodes
 };
 
 ClusterConfig.prototype.getMajority = function () {
