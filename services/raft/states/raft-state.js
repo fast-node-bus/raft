@@ -1,4 +1,4 @@
-var IndexArray = require('../lib/index-array');
+var IndexArray = require('../../../lib/index-array');
 
 function RaftState(clusterConfig, cmdHandler) {
     var self = this;
@@ -24,43 +24,7 @@ function RaftState(clusterConfig, cmdHandler) {
     self.matchIndex = {};
 
     self._nodes = null;
-    self._sendAppendEntries= function () {
-        // nop
-    };
-    self._cmdCallback = function () {
-        // nop
-    };
 }
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.onSendAppendEntries = function (sendAppendEntries) {
-    var self = this;
-    self._sendAppendEntries = sendAppendEntries;
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.onCmdExec = function (cmdCallback) {
-    var self = this;
-    self._cmdCallback = cmdCallback;
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.initialize = function () {
-    var self = this;
-    self._nodes = new IndexArray('id');
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.erase = function () {
-    var self = this;
-    self._nodes = null;
-    self._sendAppendEntries= function () {
-        // nop
-    };
-    self._cmdCallback = function () {
-        // nop
-    };
-};
 
 // *********** Special for LEADER *********** //
 RaftState.prototype.addNode = function (nodeInfo) {
@@ -70,7 +34,6 @@ RaftState.prototype.addNode = function (nodeInfo) {
     self.matchIndex[nodeInfo.id] = 0;
 
     self._nodes.add(nodeInfo);
-    self._sendAppendEntries(nodeInfo.id);// ?
 };
 
 // *********** Special for LEADER *********** //
@@ -83,8 +46,63 @@ RaftState.prototype.removeNode = function (nodeInfo) {
     self._nodes.remove(nodeInfo.id);
 };
 
-RaftState.prototype.changeCommitIndex = function (commitIndex) {
+//// *********** Special for LEADER *********** //
+//RaftState.prototype.updateFollowerIndex = function (nodeId, entriesCount, retryFunc) {
+//    var self = this;
+//    self.nextIndex[nodeId] += entriesCount;
+//    self.matchIndex[nodeId] += entriesCount;
+//
+//    if (self.lastLogIndex >= self.nextIndex[nodeId]) {
+//        retryFunc(nodeId);
+//    }
+//};
+//
+//// *********** Special for LEADER *********** //
+//RaftState.prototype.decFollowerIndex = function (nodeId, retryFunc) {
+//    var self = this;
+//    self.nextIndex[nodeId]--;
+//    retryFunc(nodeId);
+//};
+//
+//// *********** Special for LEADER *********** //
+//RaftState.prototype.updateCommitIndex = function (majority, callback) {
+//    var self = this;
+//    for (var n = self.commitIndex + 1; n <= self.lastIndex; n++) {
+//        var entry = self.getEntry(n);
+//        if (entry.term === self.currentTerm) {
+//            var count = 1;
+//            for (var id in self.matchIndex) {
+//                if (self.matchIndex[id] >= n) {
+//                    count++
+//                }
+//            }
+//
+//            if (count >= majority) {
+//                self.changeCommitIndex(n, function (err, result) {
+//                    callback(err, result);
+//                });
+//            }
+//        }
+//    }
+//};
+
+// *********** Special for LEADER *********** //
+RaftState.prototype.addCmd = function (cmd) {
     var self = this;
+    var entry = {
+        term: self.currentTerm,
+        cmd: cmd
+    };
+
+    self.addEntry(entry);
+};
+
+RaftState.prototype.changeCommitIndex = function (commitIndex, callback) {
+    var self = this;
+    callback = callback || function () {
+            // nop
+        };
+
     self.commitIndex = commitIndex;
 
     while (self.commitIndex > self.lastApplied) {
@@ -92,38 +110,29 @@ RaftState.prototype.changeCommitIndex = function (commitIndex) {
         (function (lastApplied) {
             var entry = self.log[lastApplied];
             self._cmdHandler.exec(entry.cmd, function (err) {
-                self._cmdCallback(err, {index: lastApplied})
+                callback(err);
             });
         })(self.lastApplied);
     }
 };
 
+//// ???
+//RaftState.prototype.checkTerm = function (term, resultCallback) {
+//    var self = this;
+//    if (term > self.currentTerm) {
+//        self.changeTerm(term);
+//        resultCallback();
+//    }
+//};
+
 RaftState.prototype.changeTerm = function (term) {
-    // ???
+    var self = this;
+    self.currentTerm = term;
+    self.votedFor = null;
 };
 
-// *********** Special for LEADER *********** //
-RaftState.prototype.updateIndex = function (nodeId, entriesCount) {
-    var self = this;
-    self.nextIndex[nodeId] += entriesCount;
-    self.matchIndex[nodeId] += entriesCount;
-
-    if (self.lastLogIndex >= self.nextIndex[nodeId]) {
-        self._sendAppendEntries(nodeId);
-    }
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.decIndex = function (nodeId) {
-    var self = this;
-    self.nextIndex[nodeId]--;
-    self._sendAppendEntries(nodeId);
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.checkIndex = function () {
-    var self = this;
-
+RaftState.prototype.getEntry = function (index) {
+    return self.log[index];
 };
 
 RaftState.prototype.addEntry = function (entry) {
@@ -138,26 +147,6 @@ RaftState.prototype.removeEntry = function (logIndex) {
     self.log = self.log.slice(0, logIndex);
     self.lastLogIndex = logIndex - 1;
     self.lastLogTerm = self.log[self.lastLogIndex].term;
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.addCmd = function (cmd, callback) {
-    var self = this;
-    var entry = {
-        term: self.currentTerm,
-        cmd: cmd
-    };
-
-    self.addEntry(entry);
-    self._callbacks[self.lastLogIndex] = callback;
-    self._nodes.forEach(function (nodeInfo) {
-        self._sendAppendEntries(nodeInfo.id);
-    });
-};
-
-// *********** Special for LEADER *********** //
-RaftState.prototype.majority = function () {
-    return this._nodes.length / 2 | 0;
 };
 
 RaftState.prototype.createRequestVoteMsg = function () {

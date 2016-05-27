@@ -6,6 +6,9 @@ var RESPONSE_TIMEOUT = 100;
 
 // TODO: set leader 1. for self; 2. for other followers;
 module.exports = function (clusterConfig, cmdHandler, callback) {
+    var requestService=new RequestService();
+    var raftState=new RaftState();
+
     var follower=new Follower();
     var candidate=new Candidate();
     var leader=new Leader();
@@ -39,6 +42,15 @@ module.exports = function (clusterConfig, cmdHandler, callback) {
     });
 
 
+    clusterConfig.onAddNode(function (nodeInfo) {
+        requestService.addNode(nodeInfo);
+        raftState.addNode(nodeInfo);
+    });
+
+    clusterConfig.onRemoveNode(function (nodeInfo) {
+        requestService.removeNode(nodeInfo);
+        raftState.removeNode(nodeInfo);
+    });
 
     ////////////
     //var raftState = new RaftState();

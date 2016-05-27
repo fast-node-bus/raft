@@ -5,15 +5,27 @@ var Message = require('../../../lib/message2');
 
 function RaftRequest(nodeInfo, timeout) {
     var self = this;
-    var deferred = Q.defer();
+    self._nodeInfo=nodeInfo;
+    self._deferred = Q.defer();
 
     self._timeout = timeout;
     self.available = false;
 
-    self._socket = net.createConnection(nodeInfo.port, nodeInfo.host, function () {
+    self._socketDefer = Q.defer();
+    self._messageDefer =  Q.defer();
+    self._message =  self._messageDefer.promise;
+
+}
+
+RaftRequest.prototype.start = function () {
+    var self = this;
+
+    var socket = net.createConnection(self._nodeInfo.port, self._nodeInfo.host, function () {
         var message = new Message(self._socket);
         self.available = true;
-        deferred.resolve(message);
+
+        self._socketDefer.resolve(socket);
+        self._messageDefer.resolve(message);
     });
 
     self._socket.on('error', function (err) {
@@ -23,10 +35,7 @@ function RaftRequest(nodeInfo, timeout) {
     self._socket.on('close', function () {
         self.available = false;
     });
-
-
-    this._message = deferred.promise;
-}
+};
 
 RaftRequest.prototype.send = function (method, msg, callback) {
     var self = this;
@@ -50,7 +59,12 @@ RaftRequest.prototype.send = function (method, msg, callback) {
 };
 
 RaftRequest.prototype.close = function () {
-    self._socket.end();
+    self._socketDefer.promise(function(socket){
+        socket.end();
+        self._socketDefer = Q.defer();
+        self._messageDefer =  Q.defer();
+        self._message = self._messageDefer.promise;
+    });
 };
 
 module.exports = RaftRequest;

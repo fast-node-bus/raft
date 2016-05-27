@@ -7,7 +7,6 @@ AppendEntries.prototype.requestHandler = function (msg, callback) {
     var self = this;
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.changeTerm(msg.term); //set self._raftState.votedFor = null;
-        self._raftState.setVotedFor(null);
     } else if (msg.term < self._raftState.currentTerm) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
