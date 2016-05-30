@@ -1,15 +1,15 @@
 var util = require('util');
-var BaseState = require('./base-state');
+var BaseRole = require('./base-role');
 
 var ELECTION_TIMEOUT = 300;
 
-function Follower(raftState, commitLog) {
-    BaseState.call(this, raftState, commitLog);
+function Follower(raftState) {
+    BaseRole.call(this, raftState);
 
     this._timer = new ElectionTimer(ELECTION_TIMEOUT);
 }
 
-util.inherits(Follower, BaseState);
+util.inherits(Follower, BaseRole);
 
 Follower.prototype.start = function () {
     var self = this;
@@ -20,6 +20,16 @@ Follower.prototype.start = function () {
 
 Follower.prototype.stop = function () {
     this._timer.stop();
+};
+
+Follower.prototype.appendEntries = function (msg, callback) {
+    var self=this;
+    self._handler.checkTerm(msg.term, function(){
+
+    });
+
+
+    self.appendEntries(msg, callback);
 };
 
 module.exports = Follower;

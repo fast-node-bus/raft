@@ -1,7 +1,11 @@
+var util=require('util');
+var BaseHandler=require('./base-handler');
+
 function LeaderHandler(raftState, roleManager) {
-    this._raftState = raftState;
-    this._roleManager = roleManager;
+    BaseHandler.call(this, raftState, roleManager);
 }
+
+util.inherits(LeaderHandler, BaseHandler);
 
 LeaderHandler.prototype.checkTerm = function (term, resultCallback) {
     var self = this;

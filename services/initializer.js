@@ -6,14 +6,15 @@ var RESPONSE_TIMEOUT = 100;
 
 // TODO: set leader 1. for self; 2. for other followers;
 module.exports = function (clusterConfig, cmdHandler, callback) {
-    var requestService=new RequestService();
-    var raftState=new RaftState();
+    var requestService = new RequestService();
+    var raftState = new RaftState();
 
-    var follower=new Follower();
-    var candidate=new Candidate();
-    var leader=new Leader();
+    var follower = new Follower(raftState, clusterConfig);
+    var candidate = new Candidate(raftState, clusterConfig);
+    var leader = new Leader(raftState, clusterConfig);
 
-    var manager=new Manager(follower, candidate, leader);
+
+    var manager = new Manager(follower, candidate, leader);
 
     var server = net.createServer(function (socket) {
         var message = new Message(socket);

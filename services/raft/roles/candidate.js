@@ -1,16 +1,16 @@
 var util = require('util');
-var BaseState = require('./base-state');
+var BaseRole = require('./base-role');
 
 var ELECTION_TIMEOUT = 300;
 
-function Candidate(raftState, commitLog) {
-    BaseState.call(this, raftState, commitLog);
+function Candidate(raftState, requestService) {
+    BaseRole.call(this, raftState);
 
     this._timer = new ElectionTimer(ELECTION_TIMEOUT);
-    this._requestService = new RequestService();
+    this._requestService = requestService;
 }
 
-util.inherits(Candidate, BaseState);
+util.inherits(Candidate, BaseRole);
 
 Candidate.prototype.start = function () {
     var self = this;
@@ -26,22 +26,25 @@ Candidate.prototype.start = function () {
     var nodes = self._clusterConfig.getNodes();
     var majority = self._clusterConfig.getMajority();
 
+    function requestVote(id) {
+        self._requestService.send('request-vote', id, msg, function (err, result) {
+            if (!err) {
+                self._requestService.close(id);
+                self._handler.checkTerm(result.term, function () {
+                    self._handler.checkVote(result, majority, function () {
+                        self._context.switchToLeader();
+                    });
+                });
+            }
+        });
+    }
+
     if (majority == 1) {
         self._context.switchToLeader();
     } else {
-        self._requests = [];
+        self._requestService.start(requestVote);
         nodes.forEach(function (nodeInfo) {
-            self._requestService.add(nodeInfo, function onIdleTimeout(id) {
-                self._requestService.send('request-vote', id, msg, function (err, result) {
-                    if (!err) {
-                        self._requestService.close(id);
-                        self._requestVote.responseHandler(result, majority, function onMajority() {
-                            self.stop();
-                            self._context.switchToLeader();
-                        });
-                    }
-                });
-            });
+            requestVote(nodeInfo.id);
         });
     }
 };

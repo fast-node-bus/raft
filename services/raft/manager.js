@@ -3,35 +3,35 @@ function Manager(follower, candidate, leader) {
     this._candidate = candidate;
     this._leader = leader;
 
-    this._currentState = follower;
+    this._currentRole = follower;
 
-    follower.setContext(this);
-    candidate.setContext(this);
-    leader.setContext(this);
+    follower.setContext(this, BaseHandler);
+    candidate.setContext(this, CandidateHandler);
+    leader.setContext(this, LeaderHandler);
 }
 
 Manager.prototype.switchToFollower = function () {
-    this._currentState.stop();
-    this._currentState = this._follower;
-    this._currentState.start();
+    this._currentRole.stop();
+    this._currentRole = this._follower;
+    this._currentRole.start();
 };
 
 Manager.prototype.switchToCandidate = function () {
-    this._currentState.stop();
-    this._currentState = this._candidate;
-    this._currentState.start();
+    this._currentRole.stop();
+    this._currentRole = this._candidate;
+    this._currentRole.start();
 };
 
 Manager.prototype.switchToLeader = function () {
-    this._currentState.stop();
-    this._currentState = this._leader;
-    this._currentState.start();
+    this._currentRole.stop();
+    this._currentRole = this._leader;
+    this._currentRole.start();
 };
 
 Manager.prototype.appendEntries = function (msg, callback) {
-    this._currentState.appendEntries(msg, callback);
+    this._currentRole.appendEntries(msg, callback);
 };
 
 Manager.prototype.requestVote = function (msg, callback) {
-    this._currentState.requestVote(msg, callback);
+    this._currentRole.requestVote(msg, callback);
 };
