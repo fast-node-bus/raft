@@ -1,12 +1,9 @@
 var util = require('util');
 var BaseRole = require('./base-role');
 
-var ELECTION_TIMEOUT = 300;
-
 function Candidate(raftState, requestService) {
     BaseRole.call(this, raftState);
 
-    this._timer = new ElectionTimer(ELECTION_TIMEOUT);
     this._requestService = requestService;
 }
 
