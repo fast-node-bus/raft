@@ -17,6 +17,9 @@ var handlers = {
     'add-node': function (cmd) {
         var nodeInfo = this._clusterConfig.createNodeInfo(cmd.value);
         this._clusterConfig.add(nodeInfo);
+    },
+    'remove-node': function (cmd) {
+        this._clusterConfig.remove(cmd.value);
     }
 };
 

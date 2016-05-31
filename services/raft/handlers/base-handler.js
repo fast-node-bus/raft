@@ -11,6 +11,7 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
         return callback(null, {success: false, term: self._raftState.currentTerm});
     }
 
+    // TODO: set leader to clusterConfig ???
     self._roleManager.switchToFollower();
 
     var entry = self._raftState.getEntry(msg.prevLogIndex);

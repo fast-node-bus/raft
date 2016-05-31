@@ -1,7 +1,7 @@
 var util = require('util');
 var BaseRole = require('./base-role');
 
-function Leader(clusterConfig, requestService, raftState, cmdHandler) {
+function Leader(raftState, clusterConfig, requestService, cmdHandler) {
     var self = this;
     BaseRole.call(self, raftState);
 
@@ -16,6 +16,8 @@ util.inherits(Leader, BaseRole);
 Leader.prototype.start = function () {
     var self = this;
     var nodes = self._clusterConfig.getNodes();
+
+    self._clusterConfig.setLeader();
 
     function sendAppendEntries(id) {
         var msg = self._raftState.createAppendEntriesMsg(id);

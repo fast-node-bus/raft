@@ -2,7 +2,6 @@ function RaftState(nodeId, cmdHandler) {
     var self = this;
     self._cmdHandler = cmdHandler;
     self.nodeId = nodeId;
-    self.leaderId = null;
 
     self.currentTerm = 0;
     self.votedFor = null;
@@ -80,9 +79,8 @@ RaftState.prototype.incTerm = function () {
 };
 
 RaftState.prototype.changeTerm = function (term) {
-    var self = this;
-    self.currentTerm = term;
-    self.votedFor = null;
+    this.currentTerm = term;
+    this.votedFor = null;
 };
 
 RaftState.prototype.getEntry = function (index) {

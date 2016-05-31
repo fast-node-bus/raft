@@ -25,6 +25,12 @@ RequestService.prototype.addNode = function (nodeInfo) {
     self._connections.add({id: nodeInfo.id, timer: timer, request: request, nodeInfo: nodeInfo});
 };
 
+RequestService.prototype.removeNode = function (id) {
+    var self = this;
+    self.close(id);
+    self._connections.remove(id);
+};
+
 RequestService.prototype.start = function (idlePeriodFunc) {
     var self = this;
     self._idlePeriodFunc = idlePeriodFunc;
@@ -70,12 +76,6 @@ RequestService.prototype.closeAll = function () {
         connection.timer.stop();
         connection.request.close();
     });
-};
-
-RequestService.prototype.remove = function (id) {
-    var self = this;
-    self.close(id);
-    self._connections.remove(id);
 };
 
 RequestService.prototype.removeAll = function () {

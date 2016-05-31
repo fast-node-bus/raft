@@ -57,6 +57,15 @@ ClusterConfig.prototype.getMajority = function () {
     // TODO: return amount majority nodes
 };
 
+
+ClusterConfig.prototype.onAddNode = function () {
+    // TODO: return amount majority nodes
+};
+
+ClusterConfig.prototype.onRemoveNode = function () {
+    // TODO: return amount majority nodes
+};
+
 function generateId(nodeAddress) {
     return nodeAddress.host + ':' + nodeAddress.port;
 }

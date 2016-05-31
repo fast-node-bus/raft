@@ -1,9 +1,10 @@
 var util = require('util');
 var BaseRole = require('./base-role');
 
-function Candidate(raftState, requestService) {
+function Candidate(raftState, clusterConfig, requestService) {
     BaseRole.call(this, raftState);
 
+    this._clusterConfig = clusterConfig;
     this._requestService = requestService;
 }
 
