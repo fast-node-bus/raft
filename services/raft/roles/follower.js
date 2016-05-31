@@ -1,8 +1,8 @@
 var util = require('util');
 var BaseRole = require('./base-role');
 
-function Follower(raftState) {
-    BaseRole.call(this, raftState);
+function Follower(raftState, clusterConfig) {
+    BaseRole.call(this, raftState, clusterConfig);
 }
 
 util.inherits(Follower, BaseRole);

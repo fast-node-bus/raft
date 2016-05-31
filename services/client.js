@@ -20,26 +20,24 @@ Client.prototype.addNode = function (nodeAddress, callback) {
             value: nodeAddress
         };
 
-        message.send('client-cmd', cmd, function (err, leaderAddress) {
+        message.send('client-cmd', cmd, function (err, result) {
             if (err) {
                 return deferred.reject(err);
             }
 
-            if (leaderAddress) {
-                var result = {
-                    notLeader: true,
-                    host: leaderAddress.host,
-                    port: leaderAddress.port
-                };
-
-                return deferred.resolve(result);
+            if (!result.isLeader) {
+                if (result.leaderAddress) {
+                    return deferred.resolve(result);
+                }
+                return deferred.resolve({inElection: true});
             }
 
             deferred.resolve({ok: true});
         });
 
         setTimeout(function () {
-            deferred.resolve({timeout: true});
+            // TODO: Always timeout!!!
+            deferred.resolve({fail: true});
         }, RESPONSE_TIMEOUT)
     });
 
@@ -48,7 +46,7 @@ Client.prototype.addNode = function (nodeAddress, callback) {
     });
 
     deferred.promise.then(function (reslut) {
-        callback(reslut);
+        callback(null, reslut);
     }).catch(function (err) {
         callback(err);
     }).finally(function () {

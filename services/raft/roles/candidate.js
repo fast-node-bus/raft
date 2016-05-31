@@ -2,9 +2,8 @@ var util = require('util');
 var BaseRole = require('./base-role');
 
 function Candidate(raftState, clusterConfig, requestService) {
-    BaseRole.call(this, raftState);
+    BaseRole.call(this, raftState, clusterConfig);
 
-    this._clusterConfig = clusterConfig;
     this._requestService = requestService;
 }
 
@@ -21,7 +20,6 @@ Candidate.prototype.start = function () {
     self._raftState.incTerm();
     self._raftState.setVotedFor(nodeId);
     var msg = self._raftState.createRequestVoteMsg();
-    var nodes = self._clusterConfig.getNodes();
     var majority = self._clusterConfig.getMajority();
 
     function requestVote(id) {
@@ -30,6 +28,7 @@ Candidate.prototype.start = function () {
                 self._requestService.close(id);
                 self._handler.checkTerm(result.term, function () {
                     self._handler.checkVote(result, majority, function () {
+                        self._raftState.setLeaderId(nodeId);
                         self._context.switchToLeader();
                     });
                 });
@@ -41,7 +40,7 @@ Candidate.prototype.start = function () {
         self._context.switchToLeader();
     } else {
         self._requestService.start(requestVote);
-        nodes.forEach(function (nodeInfo) {
+        self._clusterConfig.forEach(function (nodeInfo) {
             requestVote(nodeInfo.id);
         });
     }

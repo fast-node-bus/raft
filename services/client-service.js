@@ -1,6 +1,6 @@
 var Client = require('./client');
 
-var SEED_DELAY = 1000;
+var TRY_DELAY = 1000;
 var FIND_LEADER_ATTEMPT = 3;
 
 function ClientService(nodeAddress) {
@@ -13,14 +13,14 @@ ClientService.prototype.addNode = function (seeds, callback) {
     var nodeAddress = this._nodeAddress;
 
     function tryAddNode(seedHost, seedPort) {
+        console.log('Try add node.')
         var client = new Client(seedHost, seedPort);
-        seedCounter++;
         client.addNode(nodeAddress, function (err, result) {
             if (err) {
                 return callback(err);
             }
 
-            if (seedCounter == seeds.length) {
+            if (seedCounter > seeds.length) {
                 return callback(new Error('Seeds failed.'));
             }
 
@@ -28,21 +28,23 @@ ClientService.prototype.addNode = function (seeds, callback) {
                 return callback(new Error('Find leader failed.'));
             }
 
-            if (result.timeout) {
+            if (result.fail) {
+                seedCounter++;
                 var seed = seeds[seedCounter];
                 return tryAddNode(seed.host, seed.port);
             }
 
-            if (result.fail) {
+            // Try later
+            if (result.inElection) {
+                attempt--;
                 return setTimeout(function () {
-                    var seed = seeds[seedCounter];
-                    tryAddNode(seed.host, seed.port);
-                }, SEED_DELAY);
+                    tryAddNode(seedHost, seedPort);
+                }, TRY_DELAY);
             }
 
-            if (result.notLeader) {
+            if (!result.isLeader) {
                 attempt--;
-                return tryAddNode(result.host, result.port);
+                return tryAddNode(result.leaderAddress.host, result.leaderAddress.port);
             }
 
             callback(null);

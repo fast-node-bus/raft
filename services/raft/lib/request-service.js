@@ -51,7 +51,7 @@ RequestService.prototype.stop = function () {
 
 RequestService.prototype.send = function (method, id, msg, callback) {
     var self = this;
-    var connection = self._connections.getIndex(id);
+    var connection = self._connections.get(id);
     // TODO: resent only if append-entry not heart-beat
     connection.timer.reset();
     if (!connection.request.available) {
@@ -64,7 +64,7 @@ RequestService.prototype.send = function (method, id, msg, callback) {
 
 RequestService.prototype.close = function (id) {
     var self = this;
-    var connection = self._connections.getIndex(id);
+    var connection = self._connections.get(id);
 
     connection.timer.stop();
     connection.request.close();

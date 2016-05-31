@@ -3,60 +3,78 @@ var net = require('net');
 var Message = require('../lib/message2');
 var RequestService = require('./raft/lib/request-service');
 var Follower = require('./raft/roles/follower');
-var Candidate = require('./raft/roles/follower');
-var Leader = require('./raft/roles/follower');
+var Candidate = require('./raft/roles/candidate');
+var Leader = require('./raft/roles/leader');
+var RoleManager = require('./raft/role-manager');
 
-module.exports = function (raftState, clusterConfig, cmdHandler, callback) {
+function Initializer(raftState, clusterConfig, cmdHandler) {
+    this._raftState = raftState;
+    this._clusterConfig = clusterConfig;
+    this._cmdHandler = cmdHandler;
+
+    this._server = null;
+}
+
+Initializer.prototype.start = function (callback) {
+    var self = this;
     var requestService = new RequestService();
 
-    var follower = new Follower(raftState);
-    var candidate = new Candidate(raftState, clusterConfig, requestService);
-    var leader = new Leader(raftState, clusterConfig, requestService);
-    var manager = new Manager(follower, candidate, leader);
+    var follower = new Follower(self._raftState);
+    var candidate = new Candidate(self._raftState, self._clusterConfig, requestService);
+    var leader = new Leader(self._raftState, self._clusterConfig, requestService);
+    var manager = new RoleManager(follower, candidate, leader);
 
-    var server = net.createServer(function (socket) {
+    manager.switchToFollower();
+
+    self._server = net.createServer(function (socket) {
         var message = new Message(socket);
 
         message.listen('client-cmd', function (cmd, res) {
-            if (clusterConfig.isLeader) {
-                leader.exec(cmd, function (err, result) {
-                    res.send(err, result);
-                });
-            } else {
-                res.send(null, clusterConfig.getLeaderAddress());
-            }
+            console.log('client-cmd');
+            console.log(cmd);
+            manager.exec(cmd, function (err, result) {
+                res.send(err, result);
+            });
         });
 
         message.listen('append-entries', function (msg, res) {
+            console.log('append-entries');
+            console.log(msg);
             manager.appendEntries(msg, function (err, result) {
                 res.send(err, result);
             });
         });
 
         message.listen('request-vote', function (msg, res) {
+            console.log('request-vote');
+            console.log(msg);
             manager.requestVote(msg, function (err, result) {
                 res.send(err, result);
             });
         });
     });
 
-    clusterConfig.onAddNode(function (nodeInfo) {
+    this._clusterConfig.onAddNode(function (nodeInfo) {
         requestService.addNode(nodeInfo);
-        raftState.addNode(nodeInfo);
+        self._raftState.addNode(nodeInfo);
     });
 
-    clusterConfig.onRemoveNode(function (nodeInfo) {
+    this._clusterConfig.onRemoveNode(function (nodeInfo) {
         requestService.removeNode(nodeInfo.id);
-        raftState.removeNode(nodeInfo.id);
+        self._raftState.removeNode(nodeInfo.id);
     });
 
-    server.on('error', function (err) {
+    self._server.on('error', function (err) {
         callback(err);
     });
 
-    server.listen(clusterConfig.nodeAddress.port, clusterConfig.nodeAddress.host, function () {
+    self._server.listen(self._clusterConfig.nodeInfo.port, self._clusterConfig.nodeInfo.host, function () {
         callback(null);
     });
-
-
 };
+
+Initializer.prototype.stop = function () {
+    this._server.close();
+};
+
+module.exports = Initializer;

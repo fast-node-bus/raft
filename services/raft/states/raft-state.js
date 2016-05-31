@@ -1,7 +1,11 @@
+var Q = require('q');
+
 function RaftState(nodeId, cmdHandler) {
     var self = this;
     self._cmdHandler = cmdHandler;
     self.nodeId = nodeId;
+    self.leaderId = null;
+    this._leaderDefer = Q.defer();
 
     self.currentTerm = 0;
     self.votedFor = null;
@@ -69,8 +73,24 @@ RaftState.prototype.changeCommitIndex = function (commitIndex, callback) {
     }
 };
 
+RaftState.prototype.setLeaderId = function (nodeId) {
+    this.leaderId = nodeId;
+    //if (this.leaderId !== nodeId) {
+    //    //this._leaderDefer = Q.defer();
+    //    this._leaderDefer.resolve(nodeId);
+    //}
+};
+
+//RaftState.prototype.getLeaderId = function (callback) {
+//    this._leaderDefer.promise = this._leaderDefer.promise.then(callback);
+//};
+
 RaftState.prototype.setVotedFor = function (nodeId) {
     this.votedFor = nodeId;
+    this.leaderId = null;
+    //if (this.leaderId !== nodeId) {
+    //    this._leaderDefer = Q.defer();
+    //}
 };
 
 RaftState.prototype.incTerm = function () {

@@ -3,9 +3,8 @@ var BaseRole = require('./base-role');
 
 function Leader(raftState, clusterConfig, requestService, cmdHandler) {
     var self = this;
-    BaseRole.call(self, raftState);
+    BaseRole.call(self, raftState, clusterConfig);
 
-    self._clusterConfig = clusterConfig;
     self._requestService = requestService;
     self._cmdHandler = cmdHandler;
     self._callbacks = {};
@@ -15,9 +14,6 @@ util.inherits(Leader, BaseRole);
 
 Leader.prototype.start = function () {
     var self = this;
-    var nodes = self._clusterConfig.getNodes();
-
-    self._clusterConfig.setLeader();
 
     function sendAppendEntries(id) {
         var msg = self._raftState.createAppendEntriesMsg(id);
@@ -41,7 +37,7 @@ Leader.prototype.start = function () {
                 var callback = self._callbacks[self._raftState.lastApplied];
                 delete self._callbacks[self._raftState.lastApplied];
 
-                callback(err, result);
+                callback(err, {isLeader: true, value: result});
             });
         } else {
             self._handler.decFollowerIndex(id, function retry(id) {
@@ -51,7 +47,7 @@ Leader.prototype.start = function () {
     }
 
     self._requestService.start(sendAppendEntries);
-    nodes.forEach(function (nodeInfo) {
+    self._clusterConfig.forEach(function (nodeInfo) {
         sendAppendEntries(nodeInfo.id);
     });
 };

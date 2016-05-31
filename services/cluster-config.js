@@ -3,32 +3,21 @@ var moment = require('moment');
 var IndexArray = require('../lib/index-array');
 
 function ClusterConfig(nodeAddress) {
-    this._nodesById = new IndexArray('id');
-    this._leader = {};
+    this._nodes = new IndexArray('id');
+    this.nodeInfo = this.createNodeInfo(nodeAddress);
 
-    this.nodeAddress = nodeAddress;
-    this.isLeader = false;
+    this._addNodeCallback = function () {
+        // nop
+    };
+    this._removeNodeCallback = function () {
+        // nop
+    };
+
+    console.log(this.nodeInfo);
 }
 
-ClusterConfig.prototype.setLeader = function (nodeAddress) {
-    // TODO: reset old Leader
-    if (!nodeAddress) {
-        this.isLeader = true;
-        nodeAddress = this.nodeAddress;
-    }
-
-    var id = generateId(nodeAddress);
-    var nodeInfo = this._nodesById.getIndex(id);
-    nodeInfo.isLeader = true;
-
-    this._leader = nodeInfo;
-};
-
-ClusterConfig.prototype.getLeaderAddress = function () {
-    return {
-        host: this._leader.host,
-        port: this._leader.port
-    };
+ClusterConfig.prototype.getAddress = function (id) {
+    return this._nodes.get(id);
 };
 
 ClusterConfig.prototype.createNodeInfo = function (nodeAddress) {
@@ -36,34 +25,39 @@ ClusterConfig.prototype.createNodeInfo = function (nodeAddress) {
         id: generateId(nodeAddress),
         created: moment.now(),
         host: nodeAddress.host,
-        port: nodeAddress.port,
-        isLeader: false
+        port: nodeAddress.port
     };
 };
 
 ClusterConfig.prototype.add = function (nodeInfo) {
-    this._nodesById.add(nodeInfo);
+    this._nodes.add(nodeInfo);
+    this._addNodeCallback(nodeInfo);
+    console.log(this.nodeInfo);
+};
+
+ClusterConfig.prototype.remove = function (id) {
+    this._nodes.remove(id);
+    this._removeNodeCallback(id);
 };
 
 ClusterConfig.prototype.getNodeId = function () {
-    // TODO: return self ID
+    return this.nodeInfo.id;
 };
 
-ClusterConfig.prototype.getNodes = function () {
-    // TODO: return all neighboring nodes
+ClusterConfig.prototype.forEach = function (callback) {
+    this._nodes.forEach(callback);
 };
 
 ClusterConfig.prototype.getMajority = function () {
-    // TODO: return amount majority nodes
+    return ((this._nodes.length + 1) / 2 | 0) + 1;
 };
 
-
-ClusterConfig.prototype.onAddNode = function () {
-    // TODO: return amount majority nodes
+ClusterConfig.prototype.onAddNode = function (addNodeCallback) {
+    this._addNodeCallback = addNodeCallback;
 };
 
-ClusterConfig.prototype.onRemoveNode = function () {
-    // TODO: return amount majority nodes
+ClusterConfig.prototype.onRemoveNode = function (removeNodeCallback) {
+    this._removeNodeCallback = removeNodeCallback;
 };
 
 function generateId(nodeAddress) {
