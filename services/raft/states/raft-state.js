@@ -148,4 +148,14 @@ RaftState.prototype.createAppendEntriesMsg = function (nodeId) {
     };
 };
 
+
+RaftState.prototype.createCatchUpMsg = function () {
+    return {
+        leaderId: this.nodeId,
+        prevLogIndex: this.lastLogIndex,
+        entries: [],
+        leaderCommit: this.commitIndex
+    };
+};
+
 module.exports = RaftState;

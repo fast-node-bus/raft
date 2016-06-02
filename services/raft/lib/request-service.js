@@ -12,7 +12,7 @@ function RequestService() {
 
 RequestService.prototype.addNode = function (nodeInfo) {
     var self = this;
-    var request = new Request(nodeInfo, REQUEST_TIMEOUT);
+    var request = new Request(connection.nodeInfo.host, connection.nodeInfo.port, REQUEST_TIMEOUT);
     var timer = new Timer(IDLE_PERIOD);
 
     if (self._isStart) {
@@ -55,7 +55,7 @@ RequestService.prototype.send = function (method, id, msg, callback) {
     // TODO: resent only if append-entry not heart-beat
     connection.timer.reset();
     if (!connection.request.available) {
-        connection.request = new Request(connection.nodeInfo, REQUEST_TIMEOUT);
+        connection.request = new Request(connection.nodeInfo.host, connection.nodeInfo.port, REQUEST_TIMEOUT);
     }
     connection.request.send(method, msg, function (err, result) {
         callback(err, result);

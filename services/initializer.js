@@ -37,6 +37,22 @@ Initializer.prototype.start = function (callback) {
             });
         });
 
+        message.listen('add-server', function (nodeAddress, res) {
+            console.log('add-server');
+            console.log(nodeAddress);
+            manager.addServer(nodeAddress, function (err, result) {
+                res.send(err, result);
+            });
+        });
+
+        message.listen('remove-server', function (nodeAddress, res) {
+            console.log('remove-server');
+            console.log(nodeAddress);
+            manager.removeServer(nodeAddress, function (err, result) {
+                res.send(err, result);
+            });
+        });
+
         message.listen('append-entries', function (msg, res) {
             console.log('append-entries');
             console.log(msg);

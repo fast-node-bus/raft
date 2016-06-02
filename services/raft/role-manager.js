@@ -46,8 +46,15 @@ RoleManager.prototype.requestVote = function (msg, callback) {
 };
 
 RoleManager.prototype.exec = function (cmd, callback) {
-    console.log('Received cmd.');
     this._currentRole.exec(cmd, callback);
+};
+
+RoleManager.prototype.addServer = function (nodeAddress, callback) {
+    this._currentRole.addServer(nodeAddress, callback);
+};
+
+RoleManager.prototype.removeServer = function (nodeAddress, callback) {
+    this._currentRole.removeServer(nodeAddress, callback);
 };
 
 module.exports = RoleManager;

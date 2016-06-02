@@ -52,16 +52,40 @@ Leader.prototype.start = function () {
     });
 };
 
+Leader.prototype.stop = function () {
+    var self = this;
+    self._requestService.stop();
+    self._callbacks = {};
+};
+
 Leader.prototype.exec = function (cmd, callback) {
     var self = this;
     self._raftState.addCmd(cmd);
     self._callbacks[self.lastLogIndex] = callback;
 };
 
-Leader.prototype.stop = function () {
-    var self = this;
-    self._requestService.stop();
-    self._callbacks = {};
+Leader.prototype.addServer = function (nodeAddress, callback) {
+    var self=this;
+    // TODO: raftState.nextIndex[id] -> new server ???
+    var msg=self._raftState.createAppendEntriesMsg('???');
+    var request=new Request(nodeAddress.host, nodeAddress.port, 300);
+    request.start();
+    request.send('append-entries', msg, function(err, result){
+        if(err){
+            return callback(null, {status: 'TIMEOUT'});
+        }
+
+        if(result){
+
+        }
+    });
+};
+
+
+BaseRole.prototype.removeServer = function (nodeAddress, callback) {
+    var self=this;
+
+
 };
 
 module.exports = Leader;

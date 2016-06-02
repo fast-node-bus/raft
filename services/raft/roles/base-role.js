@@ -27,12 +27,31 @@ BaseRole.prototype.requestVote = function (msg, callback) {
 
 BaseRole.prototype.exec = function (cmd, callback) {
     var leaderId = this._raftState.leaderId;
+    if (leaderId) {
+        var leaderAddress = this._clusterConfig.getAddress(leaderId);
+        return callback(null, {isLeader: true, leaderAddress: leaderAddress});
+    }
+
+    callback(null, {isLeader: false, leaderAddress: null});
+};
+
+BaseRole.prototype.addServer = function (nodeAddress, callback) {
+    sendLeaderAddress.call(this, callback);
+};
+
+
+BaseRole.prototype.removeServer = function (nodeAddress, callback) {
+    sendLeaderAddress.call(this, callback);
+};
+
+function sendLeaderAddress(callback) {
+    var leaderId = this._raftState.leaderId;
     var leaderAddress = null;
     if (leaderId) {
         leaderAddress = this._clusterConfig.getAddress(leaderId);
     }
 
-    callback(null, {isLeader: false, leaderAddress: leaderAddress});
-};
+    callback(null, {status: 'NOT_LEADER', leaderAddress: leaderAddress});
+}
 
 module.exports = BaseRole;
