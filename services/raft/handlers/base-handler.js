@@ -48,7 +48,7 @@ BaseHandler.prototype.requestVote = function (msg, callback) {
         return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
     }
 
-    var entry = self._raftState.get(self._raftState.lastApplied);
+    var entry = self._raftState.getEntry(self._raftState.lastApplied);
     var isLogUpToDate = msg.lastLogTerm > entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
     if ((!self._raftState.votedFor || self._raftState.votedFor === msg.candidateId) && isLogUpToDate) {
         self._raftState.votedFor = msg.candidateId;
