@@ -66,7 +66,7 @@ Leader.prototype.exec = function (cmd, callback) {
 
 Leader.prototype.addServer = function (nodeAddress, callback) {
     var self=this;
-    // TODO: raftState.nextIndex[id] -> new server ???
+    // TODO: raftState.nextIndex[id] -> new server OR local nextIndex ???
     var msg=self._raftState.createAppendEntriesMsg('???');
     var request=new Request(nodeAddress.host, nodeAddress.port, 300);
     request.start();
