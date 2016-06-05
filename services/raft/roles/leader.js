@@ -64,18 +64,18 @@ Leader.prototype.exec = function (cmd, callback) {
     self._callbacks[self.lastLogIndex] = callback;
 };
 
-Leader.prototype.addServer = function (nodeAddress, callback) {
-    var self=this;
-    // TODO: raftState.nextIndex[id] -> new server OR local nextIndex ???
-    var msg=self._raftState.createAppendEntriesMsg('???');
-    var request=new Request(nodeAddress.host, nodeAddress.port, 300);
-    request.start();
-    request.send('append-entries', msg, function(err, result){
-        if(err){
-            return callback(null, {status: 'TIMEOUT'});
-        }
+// *************************
+var ELECTION_TIMEOUT = 300;
+var ROUND_COUNT = 10;
 
-        if(result){
+Leader.prototype.addServer = function (nodeAddress, callback) {
+    var self = this;
+    // TODO: raftState.nextIndex[id] -> new server OR local nextIndex ???
+    var msg = self._raftState.createAppendEntriesMsg('???');
+    var request = new Request(nodeAddress.host, nodeAddress.port, 300);
+    request.start();
+    request.send('append-entries', msg, function (err, result) {
+        if(!err){
 
         }
     });
@@ -83,7 +83,7 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
 
 
 BaseRole.prototype.removeServer = function (nodeAddress, callback) {
-    var self=this;
+    var self = this;
 
 
 };
