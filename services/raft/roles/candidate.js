@@ -16,11 +16,11 @@ Candidate.prototype.start = function () {
         self._context.switchToCandidate();
     });
 
-    var nodeId = self._clusterConfig.getNodeId();
+    var nodeId = self._raftState.nodeId;
     self._raftState.incTerm();
     self._raftState.setVotedFor(nodeId);
     var msg = self._raftState.createRequestVoteMsg();
-    var majority = self._clusterConfig.getMajority();
+    var majority = self._raftState.getMajority();
 
     function requestVote(id) {
         self._requestService.send('request-vote', id, msg, function (err, result) {

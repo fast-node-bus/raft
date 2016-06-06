@@ -1,27 +1,25 @@
 var net = require('net');
 
 var Message = require('../lib/message2');
-var RequestService = require('./raft/lib/request-service');
 var Follower = require('./raft/roles/follower');
 var Candidate = require('./raft/roles/candidate');
 var Leader = require('./raft/roles/leader');
 var RoleManager = require('./raft/role-manager');
 
-function Initializer(raftState, clusterConfig, cmdHandler) {
+function Initializer(raftState, requestService, clusterConfig) {
     this._raftState = raftState;
+    this._requestService = requestService;
     this._clusterConfig = clusterConfig;
-    this._cmdHandler = cmdHandler;
 
     this._server = null;
 }
 
 Initializer.prototype.start = function (callback) {
     var self = this;
-    var requestService = new RequestService();
 
     var follower = new Follower(self._raftState);
-    var candidate = new Candidate(self._raftState, self._clusterConfig, requestService);
-    var leader = new Leader(self._raftState, self._clusterConfig, requestService);
+    var candidate = new Candidate(self._raftState, self._clusterConfig, self._requestService);
+    var leader = new Leader(self._raftState, self._clusterConfig, self._requestService);
     var manager = new RoleManager(follower, candidate, leader);
 
     manager.switchToFollower();
@@ -71,12 +69,12 @@ Initializer.prototype.start = function (callback) {
     });
 
     this._clusterConfig.onAddNode(function (nodeInfo) {
-        requestService.addNode(nodeInfo);
+        self._requestService.addNode(nodeInfo);
         self._raftState.addNode(nodeInfo);
     });
 
     this._clusterConfig.onRemoveNode(function (nodeInfo) {
-        requestService.removeNode(nodeInfo.id);
+        self._requestService.removeNode(nodeInfo.id);
         self._raftState.removeNode(nodeInfo.id);
     });
 

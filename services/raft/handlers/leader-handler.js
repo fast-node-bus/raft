@@ -40,7 +40,7 @@ LeaderHandler.prototype.updateCommitIndex = function (majority, callback) {
         if (entry.term === self._raftState.currentTerm) {
             var count = 1;
             for (var id in self._raftState.matchIndex) {
-                if (self._raftState.matchIndex[id] >= n) {
+                if (self._raftState.matchIndex[id] >= n) { // TODO: && !self._raftState.matchIndex[id].nonVoting
                     count++
                 }
             }

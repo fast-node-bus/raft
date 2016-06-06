@@ -4,10 +4,15 @@ var IndexArray = require('../../../lib/index-array');
 var IDLE_PERIOD = 100;
 var REQUEST_TIMEOUT = 200;
 
-function RequestService() {
-    this._isStart = false;
-    this._connections = new IndexArray('id');
-    this._idlePeriodFunc = null;
+function RequestService(nodes) {
+    var self=this;
+    self._isStart = false;
+    self._connections = new IndexArray('id');
+    self._idlePeriodFunc = null;
+
+    nodes.forEach(function(nodeInfo){
+        self.addNode(nodeInfo);
+    });
 }
 
 RequestService.prototype.addNode = function (nodeInfo) {

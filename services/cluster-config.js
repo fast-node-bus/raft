@@ -2,16 +2,23 @@ var moment = require('moment');
 
 var IndexArray = require('../lib/index-array');
 
-function ClusterConfig(nodeAddress) {
-    this._nodes = new IndexArray('id');
-    this.nodeInfo = this.createNodeInfo(nodeAddress);
+function ClusterConfig(nodeAddress, addresses) {
+    var self = this;
+    self._nodes = new IndexArray('id');
+    self.nodeInfo = self.createNodeInfo(nodeAddress);
 
-    this._addNodeCallback = function () {
+    self._addNodeCallback = function () {
         // nop
     };
-    this._removeNodeCallback = function () {
+    self._removeNodeCallback = function () {
         // nop
     };
+
+    // TODO: maybe add itself ???
+    addresses.forEach(function (address) {
+        var nodeInfo = self.createNodeInfo(address);
+        self._nodes.add(nodeInfo);
+    });
 
     console.log(this.nodeInfo);
 }
@@ -42,6 +49,11 @@ ClusterConfig.prototype.remove = function (id) {
 
 ClusterConfig.prototype.getNodeId = function () {
     return this.nodeInfo.id;
+};
+
+// TODO: maybe return include itself ???
+ClusterConfig.prototype.getNodes = function () {
+    return this._nodes.getAll();
 };
 
 ClusterConfig.prototype.forEach = function (callback) {

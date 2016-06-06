@@ -1,15 +1,16 @@
 var Q = require('q');
 
-function RaftState(nodeId, cmdHandler) {
+function RaftState(nodeId, nodes, cmdHandler) {
     var self = this;
     self._cmdHandler = cmdHandler;
     self.nodeId = nodeId;
     self.leaderId = null;
-    this._leaderDefer = Q.defer();
+    self._nodesCount = 1;
 
     self.currentTerm = 0;
     self.votedFor = null;
-    self.log = [{term: 0}];
+    self.log = [{term: 0, cmd: {name: 'cluster', value: nodes}}];
+    self.lastClusterLogIndex = 0;
 
     self.lastLogIndex = 0;
     self.lastLogTerm = 0;
@@ -19,28 +20,37 @@ function RaftState(nodeId, cmdHandler) {
 
     self.nextIndex = {};
     self.matchIndex = {};
-
-    self._nodes = null;
 }
 
-// *********** Special for LEADER *********** //
-RaftState.prototype.addNode = function (nodeInfo) {
+RaftState.prototype.initializeIndex = function () {
     var self = this;
+    var nodes = log[self.lastClusterLogIndex].cmd.value;
+    nodes.forEach(function (nodeInfo) {
+        self.nextIndex[nodeInfo.id] = self.lastLogIndex + 1;
+        self.matchIndex[nodeInfo.id] = 0;
 
-    self.nextIndex[nodeInfo.id] = self.lastLogIndex + 1;
-    self.matchIndex[nodeInfo.id] = 0;
-
-    self._nodes.add(nodeInfo);
+        self._nodesCount++;
+    });
 };
 
 // *********** Special for LEADER *********** //
-RaftState.prototype.removeNode = function (nodeInfo) {
+RaftState.prototype.addNode = function (id, nonVoting) {
     var self = this;
 
-    delete self.nextIndex[nodeInfo.id];
-    delete self.matchIndex[nodeInfo.id];
+    self.nextIndex[id] = self.lastLogIndex + 1;
+    self.matchIndex[id] = 0;
 
-    self._nodes.remove(nodeInfo.id);
+    self._nodesCount++;
+};
+
+// *********** Special for LEADER *********** //
+RaftState.prototype.removeNode = function (id) {
+    var self = this;
+
+    delete self.nextIndex[id];
+    delete self.matchIndex[id];
+
+    self._nodesCount--;
 };
 
 // *********** Special for LEADER *********** //
@@ -120,6 +130,11 @@ RaftState.prototype.removeEntry = function (logIndex) {
     self.lastLogIndex = logIndex - 1;
     self.lastLogTerm = self.log[self.lastLogIndex].term;
 };
+
+RaftState.prototype.getMajority = function () {
+    return ((this._nodesCount + 1) / 2 | 0) + 1;
+};
+
 
 RaftState.prototype.createRequestVoteMsg = function () {
     return {
