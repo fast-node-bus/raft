@@ -12,6 +12,9 @@ function RaftState(nodeId, nodes, cmdHandler) {
     self.log = [{term: 0, cmd: {name: 'cluster', value: nodes}}];
     self.lastClusterLogIndex = 0;
 
+    self._configDefer = Q.defer();
+    self._configPomise = self._configDefer.promise;
+
     self.lastLogIndex = 0;
     self.lastLogTerm = 0;
 
@@ -30,6 +33,19 @@ RaftState.prototype.initializeIndex = function () {
         self.matchIndex[nodeInfo.id] = 0;
 
         self._nodesCount++;
+    });
+
+    self._configDefer.resolve();
+};
+
+RaftState.prototype.waitLastConfigCommit = function (callback) {
+    var self = this;
+
+
+    self._configPomise = self._configPomise.then(function () {
+        callback();
+        self._configDefer = Q.defer();
+        return self._configDefer.promise;
     });
 };
 
@@ -54,7 +70,7 @@ RaftState.prototype.removeNode = function (id) {
 };
 
 // *********** Special for LEADER *********** //
-RaftState.prototype.addCmd = function (cmd) {
+RaftState.prototype.addCmd = function (cmd, callback) {
     var self = this;
     var entry = {
         term: self.currentTerm,
@@ -62,6 +78,12 @@ RaftState.prototype.addCmd = function (cmd) {
     };
 
     self.addEntry(entry);
+
+    self._cmdPomise = self._cmdPomise.then(function (result) {
+        callback(result);
+        self._cmdDefer = Q.defer();
+        return self._cmdDefer.promise;
+    });
 };
 
 RaftState.prototype.changeCommitIndex = function (commitIndex, callback) {
@@ -75,6 +97,10 @@ RaftState.prototype.changeCommitIndex = function (commitIndex, callback) {
     while (self.commitIndex > self.lastApplied) {
         self.lastApplied++;
         (function (lastApplied) {
+            if (self.lastClusterLogIndex === lastApplied) {
+                self._configDefer.resolve();
+            }
+
             var entry = self.log[lastApplied];
             self._cmdHandler.exec(entry.cmd, function (err, result) {
                 callback(err, result);

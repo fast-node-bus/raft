@@ -7,6 +7,7 @@ function Leader(raftState, clusterConfig, requestService) {
 
     self._requestService = requestService;
     self._callbacks = {};
+    self._waitCallbacks = [];
 }
 
 util.inherits(Leader, BaseRole);
@@ -34,6 +35,7 @@ Leader.prototype.start = function () {
             var majority = self._raftState.getMajority();
             self._handler.updateCommitIndex(majority, function (err, result) {
                 var callback = self._callbacks[self._raftState.lastApplied];
+
                 delete self._callbacks[self._raftState.lastApplied];
 
                 callback(err, {isLeader: true, value: result});
@@ -56,12 +58,13 @@ Leader.prototype.stop = function () {
     var self = this;
     self._requestService.stop();
     self._callbacks = {};
+    self._waitCallbacks = [];
 };
 
 Leader.prototype.exec = function (cmd, callback) {
     var self = this;
     self._raftState.addCmd(cmd);
-    self._callbacks[self.lastLogIndex] = callback;
+    self._callbacks[self._raftState.lastLogIndex] = callback;
 };
 
 
@@ -87,7 +90,8 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
             count--;
             round(checkRound);
         } else if (time < ELECTION_TIMEOUT && count > 0) {
-            waitPrevCommit(function(){
+            // TODO: current leader know when config commit
+            waitLastConfigCommit(function () {
                 addConfig(nodeAddress);
             });
         } else {
@@ -95,9 +99,34 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
         }
     }
 
+    function waitLastConfigCommit(waitCallback) {
+        if (self._raftState.commitIndex >= self._raftState.lastClusterLogIndex) {
+            return callback();
+        }
+
+        self._waitCallbacks.push(waitCallback);
+    }
+
     function addConfig(nodeAddress) {
         var cmd = {value: nodeAddress, type: 'cluster'};
         self._raftState.addCmd(cmd);
+
+        // set callback
+        self._callbacks[self._raftState.lastLogIndex] = function (err, result) {
+            nextConfig();
+            callback(err, result);
+        };
+
+        // TODO: raftState.addNewConfig() ???
+        self._raftState.lastClusterLogIndex = self._raftState.lastLogIndex;
+    }
+
+    function nextConfig() {
+        var waitCallback = self._waitCallbacks.shift() || function () {
+                // nop
+            };
+
+        waitCallback();
     }
 
     function round(finishRound) {
