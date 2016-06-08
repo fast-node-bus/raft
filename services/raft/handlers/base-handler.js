@@ -5,10 +5,15 @@ function BaseHandler(raftState, roleManager) {
 
 BaseHandler.prototype.appendEntries = function (msg, callback) {
     var self = this;
+
+    function finish(success){
+        callback(null, {success: success, term: self._raftState.currentTerm, lastLogIndex: self._raftState.lastLogIndex})
+    }
+
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.changeTerm(msg.term);
     } else if (msg.term < self._raftState.currentTerm) {
-        return callback(null, {success: false, term: self._raftState.currentTerm});
+        return finish(false);
     }
 
     self._raftState.setLeaderId(msg.leaderId);
@@ -17,11 +22,16 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
     var entry = self._raftState.getEntry(msg.prevLogIndex);
 
     if (!entry || entry.term != msg.prevLogTerm) {
-        return callback(null, {success: false, term: self._raftState.currentTerm});
+        return finish(false);
     }
 
     // TODO: for all entries
+    msg.entries.forEach(function(newEntry){
+
+    });
+
     var newEntry = msg.entries[0];
+
     if (newEntry) {
         if (newEntry.term != entry.term) {
             self._raftState.removeEntry(msg.prevLogIndex);
@@ -35,27 +45,32 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
         self._raftState.changeCommitIndex(commitIndex);
     }
 
-    callback(null, {success: true, term: self._raftState.currentTerm});
+    finish(true);
 };
 
 BaseHandler.prototype.requestVote = function (msg, callback) {
     var self = this;
+
+    function finish(voteGranted){
+        callback(null, {voteGranted: voteGranted, term: self._raftState.currentTerm});
+    }
+
     if (msg.term > self._raftState.currentTerm) {
         self._raftState.changeTerm(msg.term);
         self._raftState.setVotedFor(msg.candidateId);
         self._roleManager.switchToFollower();
     } else if (msg.term < self._raftState.currentTerm) {
-        return callback(null, {voteGranted: false, term: self._raftState.currentTerm});
+        return finish(false);
     }
 
     var entry = self._raftState.getEntry(self._raftState.lastApplied);
     var isLogUpToDate = msg.lastLogTerm > entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
     if ((!self._raftState.votedFor || self._raftState.votedFor === msg.candidateId) && isLogUpToDate) {
         self._raftState.votedFor = msg.candidateId;
-        return callback(null, {voteGranted: true, term: self._raftState.currentTerm});
+        return finish(true);
     }
 
-    callback(null, {voteGranted: false, term: self._raftState.currentTerm});
+    finish(false);
 };
 
 module.exports = BaseHandler;

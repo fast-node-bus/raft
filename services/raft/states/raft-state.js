@@ -1,5 +1,7 @@
 var Q = require('q');
 
+var BATCH_SIZE = 100;
+
 function RaftState(nodeId, nodes, cmdHandler) {
     var self = this;
     self._cmdHandler = cmdHandler;
@@ -9,11 +11,9 @@ function RaftState(nodeId, nodes, cmdHandler) {
 
     self.currentTerm = 0;
     self.votedFor = null;
-    self.log = [{term: 0, cmd: {name: 'cluster', value: nodes}}];
-    self.lastClusterLogIndex = 0;
-
-    self._configDefer = Q.defer();
-    self._configPomise = self._configDefer.promise;
+    self.log = [{term: 0, cmd: {name: 'nop', value: nodes}}];
+    self.lastLogConfigIndex = 0;
+    self.commitConfigIndex = 0;
 
     self.lastLogIndex = 0;
     self.lastLogTerm = 0;
@@ -27,30 +27,17 @@ function RaftState(nodeId, nodes, cmdHandler) {
 
 RaftState.prototype.initializeIndex = function () {
     var self = this;
-    var nodes = log[self.lastClusterLogIndex].cmd.value;
+    var nodes = log[self.lastLogConfigIndex].cmd.value;
     nodes.forEach(function (nodeInfo) {
         self.nextIndex[nodeInfo.id] = self.lastLogIndex + 1;
         self.matchIndex[nodeInfo.id] = 0;
 
         self._nodesCount++;
     });
-
-    self._configDefer.resolve();
-};
-
-RaftState.prototype.waitLastConfigCommit = function (callback) {
-    var self = this;
-
-
-    self._configPomise = self._configPomise.then(function () {
-        callback();
-        self._configDefer = Q.defer();
-        return self._configDefer.promise;
-    });
 };
 
 // *********** Special for LEADER *********** //
-RaftState.prototype.addNode = function (id, nonVoting) {
+RaftState.prototype.addNode = function (id) {
     var self = this;
 
     self.nextIndex[id] = self.lastLogIndex + 1;
@@ -97,8 +84,8 @@ RaftState.prototype.changeCommitIndex = function (commitIndex, callback) {
     while (self.commitIndex > self.lastApplied) {
         self.lastApplied++;
         (function (lastApplied) {
-            if (self.lastClusterLogIndex === lastApplied) {
-                self._configDefer.resolve();
+            if (self.lastLogConfigIndex === lastApplied) {
+                self.commitConfigIndex = lastApplied;
             }
 
             var entry = self.log[lastApplied];
@@ -155,6 +142,10 @@ RaftState.prototype.removeEntry = function (logIndex) {
     self.log = self.log.slice(0, logIndex);
     self.lastLogIndex = logIndex - 1;
     self.lastLogTerm = self.log[self.lastLogIndex].term;
+
+    if (self.lastLogConfigIndex > self.lastLogIndex) {
+        self.lastLogConfigIndex = self.commitConfigIndex;
+    }
 };
 
 RaftState.prototype.getMajority = function () {
@@ -171,10 +162,10 @@ RaftState.prototype.createRequestVoteMsg = function () {
     };
 };
 
-RaftState.prototype.createAppendEntriesMsg = function (nodeId) {
+RaftState.prototype.createAppendEntriesMsg = function (nodeId, noEntries) {
     var self = this;
     var index = self.nextIndex[nodeId];
-    var entries = self.log.slice(index, index + 1);
+    var entries = noEntries ? [] : self.log.slice(index, index + BATCH_SIZE);
 
     var prevLogIndex = index - 1;
     var prevLogTerm = self.getEntry(prevLogIndex).term;

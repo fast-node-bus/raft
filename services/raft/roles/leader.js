@@ -15,8 +15,8 @@ util.inherits(Leader, BaseRole);
 Leader.prototype.start = function () {
     var self = this;
 
-    function sendAppendEntries(id) {
-        var msg = self._raftState.createAppendEntriesMsg(id);
+    function sendAppendEntries(id, noEntries) {
+        var msg = self._raftState.createAppendEntriesMsg(id, noEntries);
         self._requestService.send('append-entries', id, msg, function (err, result) {
             if (!err) {
                 self._handler.checkTerm(result.term, function () {
@@ -34,15 +34,17 @@ Leader.prototype.start = function () {
 
             var majority = self._raftState.getMajority();
             self._handler.updateCommitIndex(majority, function (err, result) {
-                var callback = self._callbacks[self._raftState.lastApplied];
+                var callback = self._callbacks[self._raftState.lastApplied] || function () {
+                        // nop
+                    };
 
                 delete self._callbacks[self._raftState.lastApplied];
 
                 callback(err, {isLeader: true, value: result});
             });
         } else {
-            self._handler.decFollowerIndex(id, function retry(id) {
-                sendAppendEntries(id);
+            self._handler.decFollowerIndex(id, result.lastLogIndex, function retry(id) {
+                sendAppendEntries(id, true);
             });
         }
     }
@@ -100,8 +102,8 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
     }
 
     function waitLastConfigCommit(waitCallback) {
-        if (self._raftState.commitIndex >= self._raftState.lastClusterLogIndex) {
-            return callback();
+        if (self._raftState.commitIndex >= self._raftState.lastLogConfigIndex) {
+            return waitCallback();
         }
 
         self._waitCallbacks.push(waitCallback);
@@ -117,8 +119,8 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
             callback(err, result);
         };
 
-        // TODO: raftState.addNewConfig() ???
-        self._raftState.lastClusterLogIndex = self._raftState.lastLogIndex;
+        // TODO: raftState.addNewConfigCmd() ???
+        self._raftState.lastLogConfigIndex = self._raftState.lastLogIndex;
     }
 
     function nextConfig() {

@@ -1,5 +1,5 @@
-var util=require('util');
-var BaseHandler=require('./base-handler');
+var util = require('util');
+var BaseHandler = require('./base-handler');
 
 function LeaderHandler(raftState, roleManager) {
     BaseHandler.call(this, raftState, roleManager);
@@ -27,9 +27,9 @@ LeaderHandler.prototype.updateFollowerIndex = function (id, entriesCount, retryF
     }
 };
 
-LeaderHandler.prototype.decFollowerIndex = function (id, retryFunc) {
+LeaderHandler.prototype.decFollowerIndex = function (id, lastLogIndex, retryFunc) {
     var self = this;
-    self._raftState.nextIndex[id]--;
+    self._raftState.nextIndex[id] = lastLogIndex;
     retryFunc(id);
 };
 
