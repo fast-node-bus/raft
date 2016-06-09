@@ -24,6 +24,7 @@ Candidate.prototype.start = function () {
 
     function requestVote(id) {
         self._requestService.send('request-vote', id, msg, function (err, result) {
+            console.log(err);
             if (!err) {
                 self._requestService.close(id);
                 self._handler.checkTerm(result.term, function () {
@@ -36,13 +37,14 @@ Candidate.prototype.start = function () {
         });
     }
 
+    console.log('Majority: ' + majority);
     if (majority == 1) {
         self._context.switchToLeader();
     } else {
         self._requestService.start(requestVote);
-        self._clusterConfig.forEach(function (nodeInfo) {
-            requestVote(nodeInfo.id);
-        });
+        //self._clusterConfig.forEach(function (nodeInfo) {
+        //    requestVote(nodeInfo.id);
+        //});
     }
 };
 

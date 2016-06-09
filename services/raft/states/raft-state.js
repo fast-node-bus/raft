@@ -1,4 +1,5 @@
 var Q = require('q');
+var search = require('../../../lib/binary-search');
 
 var BATCH_SIZE = 100;
 
@@ -27,7 +28,7 @@ function RaftState(nodeId, nodes, cmdHandler) {
 
 RaftState.prototype.initializeIndex = function () {
     var self = this;
-    var nodes = log[self.lastLogConfigIndex].cmd.value;
+    var nodes = self.log[self.lastLogConfigIndex].cmd.value;
     nodes.forEach(function (nodeInfo) {
         self.nextIndex[nodeInfo.id] = self.lastLogIndex + 1;
         self.matchIndex[nodeInfo.id] = 0;
@@ -119,15 +120,30 @@ RaftState.prototype.setVotedFor = function (nodeId) {
 RaftState.prototype.incTerm = function () {
     this.currentTerm++;
     this.votedFor = null;
+    console.log('Inc term.');
+    console.log(this.currentTerm);
 };
 
 RaftState.prototype.changeTerm = function (term) {
     this.currentTerm = term;
     this.votedFor = null;
+    console.log('Change term.');
+    console.log(this.currentTerm);
 };
 
 RaftState.prototype.getEntry = function (index) {
-    return self.log[index];
+    return this.log[index];
+};
+
+RaftState.prototype.getLastEntry = function () {
+    return this.log[this.lastLogIndex];
+};
+
+RaftState.prototype.getFirstEntryIndex = function (term, index) {
+    var self = this;
+    var entryIndex = search.findFirst(self.log, term, 'term', self.commitIndex, index);
+
+    return entryIndex === -1 ? 1 : entryIndex;
 };
 
 RaftState.prototype.addEntry = function (entry) {
@@ -137,21 +153,29 @@ RaftState.prototype.addEntry = function (entry) {
     self.lastLogTerm = entry.term;
 };
 
-RaftState.prototype.removeEntry = function (logIndex) {
+RaftState.prototype.removeEntries = function (index) {
     var self = this;
-    self.log = self.log.slice(0, logIndex);
-    self.lastLogIndex = logIndex - 1;
-    self.lastLogTerm = self.log[self.lastLogIndex].term;
+    var lastEntry = self.log[index];
+    self.log = self.log.slice(0, index + 1);
+    self.lastLogIndex = index;
+    self.lastLogTerm = lastEntry.term;
 
     if (self.lastLogConfigIndex > self.lastLogIndex) {
         self.lastLogConfigIndex = self.commitConfigIndex;
     }
 };
 
+RaftState.prototype.addEntries = function (entries) {
+    var self = this;
+    var lastEntry = entries[entries.length - 1];
+    self.log = self.log.concat(entries);
+    self.lastLogIndex += entries.length;
+    self.lastLogTerm = lastEntry.term;
+};
+
 RaftState.prototype.getMajority = function () {
     return ((this._nodesCount + 1) / 2 | 0) + 1;
 };
-
 
 RaftState.prototype.createRequestVoteMsg = function () {
     return {

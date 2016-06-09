@@ -14,6 +14,9 @@ NodeCmdHandler.prototype.exec = function (cmd, callback) {
 };
 
 var handlers = {
+    'nop': function(cmd){
+        // nop
+    },
     'add-node': function (cmd) {
         var nodeInfo = this._clusterConfig.createNodeInfo(cmd.value);
         this._clusterConfig.add(nodeInfo);

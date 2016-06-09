@@ -43,8 +43,8 @@ Leader.prototype.start = function () {
                 callback(err, {isLeader: true, value: result});
             });
         } else {
-            self._handler.decFollowerIndex(id, result.lastLogIndex, function retry(id) {
-                sendAppendEntries(id, true);
+            self._handler.decFollowerIndex(id, result.lastTermIndex, result.lastTerm, function retry(id, inconsistency) {
+                sendAppendEntries(id, inconsistency);
             });
         }
     }
@@ -110,7 +110,7 @@ Leader.prototype.addServer = function (nodeAddress, callback) {
     }
 
     function addConfig(nodeAddress) {
-        var cmd = {value: nodeAddress, type: 'cluster'};
+        var cmd = {value: nodeAddress, name: 'nop'};
         self._raftState.addCmd(cmd);
 
         // set callback

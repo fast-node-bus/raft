@@ -27,10 +27,14 @@ LeaderHandler.prototype.updateFollowerIndex = function (id, entriesCount, retryF
     }
 };
 
-LeaderHandler.prototype.decFollowerIndex = function (id, lastLogIndex, retryFunc) {
+LeaderHandler.prototype.decFollowerIndex = function (id, lastTermIndex, lastTerm, retryFunc) {
     var self = this;
-    self._raftState.nextIndex[id] = lastLogIndex;
-    retryFunc(id);
+
+    var entry = self._raftState.getEntry(lastTermIndex);
+    var inconsistency = entry.term !== lastTerm;
+    self._raftState.nextIndex[id] = lastTermIndex;
+
+    retryFunc(id, inconsistency);
 };
 
 LeaderHandler.prototype.updateCommitIndex = function (majority, callback) {

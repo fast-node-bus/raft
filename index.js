@@ -5,24 +5,33 @@ var ClientService = require('./services/client-service');
 var NodeCmdHandler = require('./services/node-cmd-handler');
 var ClusterConfig = require('./services/cluster-config');
 var RaftState = require('./services/raft/states/raft-state');
-var RequestService = require('./raft/lib/request-service');
+var RequestService = require('./services/raft/lib/request-service');
 var Initializer = require('./services/initializer');
 
 var host = 'localhost';
 var port = process.argv[2];
 
 var seedHost = 'localhost';
-var seedPort = process.argv[3];
+var seedPorts = process.argv[3].split(',');
+var seeds = seedPorts.map(function (port) {
+    return {
+        host: seedHost,
+        port: port
+    };
+});
 
 var nodeAddress = {
     host: host,
     port: port
 };
 
-var clusterConfig = new ClusterConfig([nodeAddress]);
+console.log(seeds);
+var clusterConfig = new ClusterConfig(nodeAddress, seeds);
 var cmdHandler = new NodeCmdHandler(clusterConfig);
 
 var nodes = clusterConfig.getNodes();
+console.log(nodes);
+
 var raftState = new RaftState(clusterConfig.getNodeId(), nodes, cmdHandler);
 var requestService = new RequestService(nodes);
 
@@ -35,12 +44,12 @@ initializer.start(function (err) {
         return initializer.stop();
     }
 
-    if (seedPort) {
-        clientService.addNode([{host: seedHost, port: seedPort}], function (err) {
-            if (err) {
-                console.log(err);
-                return initializer.stop();
-            }
-        });
-    }
+    //if (seedPort) {
+    //    clientService.addNode([{host: seedHost, port: seedPort}], function (err) {
+    //        if (err) {
+    //            console.log(err);
+    //            return initializer.stop();
+    //        }
+    //    });
+    //}
 });

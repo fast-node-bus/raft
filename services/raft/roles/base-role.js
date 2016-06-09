@@ -1,7 +1,7 @@
 var ElectionTimer = require('../lib/election-timer');
 
-var ELECTION_TIMEOUT_MAX = 300;
-var ELECTION_TIMEOUT_MIN = 150;
+var ELECTION_TIMEOUT_MAX = 3000;
+var ELECTION_TIMEOUT_MIN = 1500;
 
 function BaseRole(raftState, clusterConfig) {
     this._raftState = raftState;

@@ -26,7 +26,7 @@ Initializer.prototype.start = function (callback) {
 
     self._server = net.createServer(function (socket) {
         var message = new Message(socket);
-
+        console.log('!!!Connect to server!!!');
         message.listen('client-cmd', function (cmd, res) {
             console.log('client-cmd');
             console.log(cmd);

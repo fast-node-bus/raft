@@ -20,7 +20,7 @@ function ClusterConfig(nodeAddress, addresses) {
         self._nodes.add(nodeInfo);
     });
 
-    console.log(this.nodeInfo);
+    console.log(self.nodeInfo);
 }
 
 ClusterConfig.prototype.getAddress = function (id) {
