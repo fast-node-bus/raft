@@ -45,6 +45,8 @@ Leader.prototype.start = function () {
             });
         } else {
             self._handler.decFollowerIndex(id, result.lastTermIndex, result.lastTerm, function retry(id, inconsistency) {
+                console.log(result.msg);
+                console.log('lastTermIndex: ' + result.lastTermIndex);
                 sendAppendEntries(id, inconsistency);
             });
         }

@@ -66,6 +66,12 @@ RaftRequest.prototype.send = function (method, msg, callback) {
             callback(new Error('Request timeout.'));
         }, self._timeout);
 
+        message.onError(function(err){
+            debug('Message Error');
+            debug(err);
+            clearTimeout(timer);
+        });
+
         return message;
     });
 };
@@ -77,8 +83,8 @@ RaftRequest.prototype.close = function () {
     self._socketDefer.promise.then(function (socket) {
         // TODO: 1. unsubscribe socket.error, socket.close - ???
         // TODO: 2. very many 'Close connection'
-        console.log('Close connection.');
-        socket.end();
+        console.log('Destroy connection.');
+        socket.destroy();
 
         self._socketDefer = Q.defer();
         self._messageDefer = Q.defer();

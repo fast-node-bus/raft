@@ -12,7 +12,8 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
         callback(null, {
             success: success,
             term: self._raftState.currentTerm,
-            lastLogIndex: self._raftState.lastLogIndex
+            lastLogIndex: self._raftState.lastLogIndex,
+            msg: msg.term + ' < ' + self._raftState.currentTerm
         });
     }
 
@@ -39,7 +40,8 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
             success: false,
             term: self._raftState.currentTerm,
             lastTerm: entry.term,
-            lastTermIndex: firstEntryIndex
+            lastTermIndex: firstEntryIndex,
+            msg: entry
         });
     } else if (msg.entries.length > 0) {
         self._raftState.removeEntries(msg.prevLogIndex);

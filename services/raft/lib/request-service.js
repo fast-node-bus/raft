@@ -2,8 +2,8 @@ var Request = require('./raft-request');
 var IndexArray = require('../../../lib/index-array');
 var Timer = require('../lib/timer');
 
-var IDLE_PERIOD = 100;
-var REQUEST_TIMEOUT = 200;
+var IDLE_PERIOD = 1000;
+var REQUEST_TIMEOUT = 2000;
 
 function RequestService(nodes) {
     var self = this;
