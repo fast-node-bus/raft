@@ -18,14 +18,4 @@ Follower.prototype.stop = function () {
     this._timer.stop();
 };
 
-Follower.prototype.appendEntries = function (msg, callback) {
-    var self = this;
-    self._handler.checkTerm(msg.term, function () {
-
-    });
-
-
-    self.appendEntries(msg, callback);
-};
-
 module.exports = Follower;

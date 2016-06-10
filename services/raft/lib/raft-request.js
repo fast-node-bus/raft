@@ -1,5 +1,7 @@
 var net = require('net');
 var Q = require('q');
+//var debug=require('debug')('bus');
+var debug=require('../../../helper/debug');
 
 var Message = require('../../../lib/message2');
 
@@ -22,6 +24,7 @@ RaftRequest.prototype.start = function () {
     var self = this;
 
     var socket = net.createConnection(self._port, self._host, function () {
+        debug('Create Connection!');
         var message = new Message(socket);
         self.available = true;
 
@@ -29,11 +32,15 @@ RaftRequest.prototype.start = function () {
         self._messageDefer.resolve(message);
     });
 
+    // TODO: events can emit after create new request 'available=false', unsubscribe self._socketDefer - ???
     socket.on('error', function (err) {
+        debug('Request Error:');
+        debug(err);
         self.available = false;
     });
 
     socket.on('close', function () {
+        debug('Request Close.');
         self.available = false;
     });
 };
@@ -41,9 +48,10 @@ RaftRequest.prototype.start = function () {
 RaftRequest.prototype.send = function (method, msg, callback) {
     var self = this;
     self._message = self._message.then(function (message) {
-        console.log('Send msg: ' + method);
+        debug('Send msg: ' + method);
         message.send(method, msg, function (err, data) {
-            console.log(data);
+            debug('Response:');
+            debug(data);
             if (err) {
                 return callback(err);
             }
@@ -64,9 +72,14 @@ RaftRequest.prototype.send = function (method, msg, callback) {
 
 RaftRequest.prototype.close = function () {
     var self = this;
+    self.available = false;
+    console.log('----Close connection.-----');
     self._socketDefer.promise.then(function (socket) {
+        // TODO: 1. unsubscribe socket.error, socket.close - ???
+        // TODO: 2. very many 'Close connection'
         console.log('Close connection.');
         socket.end();
+
         self._socketDefer = Q.defer();
         self._messageDefer = Q.defer();
         self._message = self._messageDefer.promise;

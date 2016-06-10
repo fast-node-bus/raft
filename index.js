@@ -1,5 +1,6 @@
 var moment = require('moment');
-var debug = require('./helper/debug');
+var debug = require('debug')('bus');
+debug('Hello!!!');
 
 var ClientService = require('./services/client-service');
 var NodeCmdHandler = require('./services/node-cmd-handler');

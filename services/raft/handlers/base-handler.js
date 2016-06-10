@@ -1,3 +1,5 @@
+var debug = require('debug')('bus');
+
 function BaseHandler(raftState, roleManager) {
     this._raftState = raftState;
     this._roleManager = roleManager;
@@ -39,7 +41,7 @@ BaseHandler.prototype.appendEntries = function (msg, callback) {
             lastTerm: entry.term,
             lastTermIndex: firstEntryIndex
         });
-    } else {
+    } else if (msg.entries.length > 0) {
         self._raftState.removeEntries(msg.prevLogIndex);
         self._raftState.addEntries(msg.entries);
     }
@@ -69,6 +71,9 @@ BaseHandler.prototype.requestVote = function (msg, callback) {
 
     var entry = self._raftState.getEntry(self._raftState.lastApplied);
     var isLogUpToDate = msg.lastLogTerm > entry.term || (msg.lastLogTerm === entry.term && msg.lastLogIndex >= self._raftState.lastApplied);
+    debug('isLogUpToDate' + isLogUpToDate);
+    debug(isLogUpToDate);
+    debug(self._raftState.votedFor);
     if ((!self._raftState.votedFor || self._raftState.votedFor === msg.candidateId) && isLogUpToDate) {
         self._raftState.votedFor = msg.candidateId;
         return finish(true);

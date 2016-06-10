@@ -3,7 +3,7 @@ var IndexArray = require('../../../lib/index-array');
 var Timer = require('../lib/timer');
 
 var IDLE_PERIOD = 100;
-var REQUEST_TIMEOUT = 2000;
+var REQUEST_TIMEOUT = 200;
 
 function RequestService(nodes) {
     var self = this;
@@ -62,9 +62,11 @@ RequestService.prototype.send = function (method, id, msg, callback) {
     var connection = self._connections.get(id);
 
     // TODO: resent only if append-entry not heart-beat
+    console.log('Request AVAILABLE is: '+connection.request.available);
     connection.timer.reset();
     if (!connection.request.available) {
-        connection.request = new Request(connection.nodeInfo.host, connection.nodeInfo.port, REQUEST_TIMEOUT);
+        //connection.request = new Request(connection.nodeInfo.host, connection.nodeInfo.port, REQUEST_TIMEOUT);
+        connection.request.start();
     }
     connection.request.send(method, msg, function (err, result) {
         callback(err, result);

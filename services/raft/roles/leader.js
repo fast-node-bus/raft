@@ -18,6 +18,7 @@ Leader.prototype.start = function () {
     function sendAppendEntries(id, noEntries) {
         var msg = self._raftState.createAppendEntriesMsg(id, noEntries);
         self._requestService.send('append-entries', id, msg, function (err, result) {
+            console.log(err);
             if (!err) {
                 self._handler.checkTerm(result.term, function () {
                     resultHandler(id, msg.entries.length, result);
@@ -71,7 +72,7 @@ Leader.prototype.exec = function (cmd, callback) {
 
 
 // *************************
-var ELECTION_TIMEOUT = 300;
+var ELECTION_TIMEOUT = 3000;
 var ROUND_COUNT = 10;
 
 Leader.prototype.addServer = function (nodeAddress, callback) {

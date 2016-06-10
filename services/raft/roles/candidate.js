@@ -42,9 +42,9 @@ Candidate.prototype.start = function () {
         self._context.switchToLeader();
     } else {
         self._requestService.start(requestVote);
-        //self._clusterConfig.forEach(function (nodeInfo) {
-        //    requestVote(nodeInfo.id);
-        //});
+        self._clusterConfig.forEach(function (nodeInfo) {
+            requestVote(nodeInfo.id);
+        });
     }
 };
 

@@ -6,6 +6,8 @@ var Candidate = require('./raft/roles/candidate');
 var Leader = require('./raft/roles/leader');
 var RoleManager = require('./raft/role-manager');
 
+var debug=require('../helper/debug');
+
 function Initializer(raftState, requestService, clusterConfig) {
     this._raftState = raftState;
     this._requestService = requestService;
@@ -26,7 +28,7 @@ Initializer.prototype.start = function (callback) {
 
     self._server = net.createServer(function (socket) {
         var message = new Message(socket);
-        console.log('!!!Connect to server!!!');
+        debug('!!!Connect to server!!!');
         message.listen('client-cmd', function (cmd, res) {
             console.log('client-cmd');
             console.log(cmd);
@@ -68,15 +70,15 @@ Initializer.prototype.start = function (callback) {
         });
     });
 
-    this._clusterConfig.onAddNode(function (nodeInfo) {
-        self._requestService.addNode(nodeInfo);
-        self._raftState.addNode(nodeInfo);
-    });
-
-    this._clusterConfig.onRemoveNode(function (nodeInfo) {
-        self._requestService.removeNode(nodeInfo.id);
-        self._raftState.removeNode(nodeInfo.id);
-    });
+    //this._clusterConfig.onAddNode(function (nodeInfo) {
+    //    //self._requestService.addNode(nodeInfo);
+    //    //self._raftState.addNode(nodeInfo);
+    //});
+    //
+    //this._clusterConfig.onRemoveNode(function (nodeInfo) {
+    //    //self._requestService.removeNode(nodeInfo.id);
+    //    //self._raftState.removeNode(nodeInfo.id);
+    //});
 
     self._server.on('error', function (err) {
         callback(err);
