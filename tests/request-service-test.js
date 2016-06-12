@@ -27,20 +27,69 @@ function listen(address, method, callback) {
 }
 
 describe('First Test', function () {
-    var nodes=clusterConfig1.getNodes();
+    var clusterConfig1 = new ClusterConfig(address1, [address2]);
+    var nodes = clusterConfig1.getNodes();
     var requestService = new RequestService(nodes);
-    listen(address2, 'test-method', function(err, result){
-
+    requestService.start(function(id){
+        console.log('id: '+id);
+        requestService.send('test-method', id, {id: id, hello: 'hello'}, function(err, result){
+            console.log(err);
+            console.log(result);
+        });
     });
 
-    listen(address3, 'test-method', function(err, result){
 
-    });
+    //listen(address3, 'test-method', function (msg, res) {
+    //    console.log(msg);
+    //    res.send('Ok: '+ msg.id);
+    //});
 
 
+    it('First', function (done) {
+        this.timeout(7000);
+        setTimeout(function(){
+            console.log("Listen address2...");
+            listen(address2, 'test-method', function (msg, res) {
+                console.log(msg);
+                res.send('Ok: '+ msg.id);
+            });
+        }, 2000);
 
-    it('First', function () {
-        this.timeout(5000);
-        assert.equal(1, 1);
+        setTimeout(function(){
+            done();
+        }, 3000)
     });
 });
+
+//describe('Second Test', function () {
+//    var nodes = clusterConfig1.getNodes();
+//    var requestService = new RequestService(nodes);
+//    requestService.start(function(id){
+//        console.log('id: '+id);
+//        requestService.send('test-method', id, {id: id, hello: 'hello'}, function(err, result){
+//            console.log(err);
+//            console.log(result);
+//        });
+//    });
+//
+//
+//    //listen(address3, 'test-method', function (msg, res) {
+//    //    console.log(msg);
+//    //    res.send('Ok: '+ msg.id);
+//    //});
+//
+//
+//    it('First', function (done) {
+//        this.timeout(7000);
+//        setTimeout(function(){
+//            listen(address2, 'test-method', function (msg, res) {
+//                console.log(msg);
+//                res.send('Ok: '+ msg.id);
+//            });
+//        }, 3000);
+//
+//        setTimeout(function(){
+//            done();
+//        }, 6000)
+//    });
+//});
